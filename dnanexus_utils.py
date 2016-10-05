@@ -21,13 +21,57 @@ import json
 
 import scgpm_lims #module load scgpm_lims/current gbsc/limshostenv/prod
 #The environment module gbsc/dnanexus/current should also be loaded in order to log into DNAnexus
+import gbsc_dnanexus.utils #module load gbsc/gbsc_dnanexus/current
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:   %(message)s')
+chandler = logging.StreamHandler(sys.stdout)
+chandler.setLevel(logging.DEBUG)
+chandler.setFormatter(formatter)
+logger.addHandler(chandler)
+
+def accept_project_transfers(dx_username,access_level,queue,org):
+	"""
+	Function :
+	Args     : dx_username - The DNAnexus login user name that is to receive pending transfers. An API token must have already been
+								generated for this user and that token must have been added to the DNAnexus login configuration file located at 
+								{DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
+						 access_level - Permissions level the new member should have on transferred projects. Should be one of 
+						     ["VIEW","UPLOAD","CONTRIBUTE","ADMINISTER"]. See 
+							   https://wiki.dnanexus.com/API-Specification-v1.0.0/Project-Permissions-and-Sharing for more details on access levels.
+						 queue - str. The value of the queue property on a DNAnexus project. Only projects that are pending transfer that have
+									   this value for the queue property will be transferred to the specified org.
+						 org - The name of the DNAnexus org under which to accept the project transfers for projects that have their queue property
+									 set to the value of the 'queue' argument.
+	Returns  :
+	"""
+	dx_username = gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
+	gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
+	org = gbsc_dnanexus.utils.add_dx_orgprefix(org)
+	pending_tansfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
+	#pending_transfers is a list of project IDs
+	transferred = []
+	for proj_id in pendingTransfers:
+		dx_proj = dxpy.DXProjecdt(proj_id)
+		props = dx_proj.describe(input_params={"properties": True})["properties"]
+		project_queue = props["queue"]	
+		if queue != project_queue:
+			continue
+		logger.info("Accepting project transfer of {proj_id} for user {user}, to be billed under the org {org}.".format(proj_id=proj_id,user=dx_username,org=org))
+		dxpy.DXHTTPRequest("/" + proj_id + "/acceptTransfer", {"billTo": org })
+		transferred.append(dx_proj.name)
+	return transferred
+
+	
 
 class DnanexusBarcodeNotFound(Exception):
 	pass
 
 class DxSeqResults:
 	UHTS = scgpm_lims.Connection()
-	SNYDER_ENCODE_ORG = "org-snyder_encode"
+	#SNYDER_ENCODE_ORG = "org-snyder_encode"
 	LOG_LEVELS = [x for x in logging._levelNames if isinstance(x,str)]
 	LOGGER_LEVEL = logging.DEBUG #accept all messages sent to it
 	DEFAULT_HANDLER_LEVEL = logging.DEBUG
@@ -36,7 +80,10 @@ class DxSeqResults:
 	def __init__(self,dx_username,dx_project_name=False,sreq_id=False,billed_to=None):
 		"""
 		Args : sreq_id - The Syapse unique ID of a SequencingRequest object.
+					 dx_username - str. The login name of a DNAnexus user.
 		"""
+		gbsc_dnanexus.utils.strip_dx_userprefix(dx_username)
+		gbsc_dnanexus_utils.add_dx_userprefix(dx_username)
 		self.billing_account = billed_to
 		if not self.billing_account:
 			self.billing_account = None
@@ -46,8 +93,7 @@ class DxSeqResults:
 	
 		#LOG INTO DNANEXUS FIRST
 		self.dx_username = dx_username
-		#"module load gbsc/dnanexus/current" to get the script log_into_dnanexus.sh
-		subprocess.check_call("log_into_dnanexus.sh -u {du}".format(du=self.dx_username),shell=True)
+		gbsc_dnanexus.utils.log_into_dnanexus(self.dx_username)
 		self.dx_project_name = dx_project_name
 		self.sreq_id = sreq_id
 		if not self.dx_project_name and not self.sreq_id:
@@ -194,6 +240,7 @@ class DxSeqResults:
 		return dico
 			
 
+		
 				
 
 #logger = logging.getLogger(__name__)
