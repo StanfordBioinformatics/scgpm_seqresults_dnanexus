@@ -1,0 +1,209 @@
+#!/usr/bin/env python
+
+###
+#Author: Nathaniel Watson
+#2016-08-02
+###
+
+###
+#ENVIRONMENT MODULES
+#	1) gbsc/encode/prod
+###
+
+import pdb
+import subprocess
+import os
+import sys
+import logging
+from argparse import ArgumentParser
+import dxpy #module load dx-toolkit/dx-toolkit
+import json
+
+import scgpm_lims #module load scgpm_lims/current gbsc/limshostenv/prod
+#The environment module gbsc/dnanexus/current should also be loaded in order to log into DNAnexus
+
+class DnanexusBarcodeNotFound(Exception):
+	pass
+
+class DxSeqResults:
+	UHTS = scgpm_lims.Connection()
+	SNYDER_ENCODE_ORG = "org-snyder_encode"
+	LOG_LEVELS = [x for x in logging._levelNames if isinstance(x,str)]
+	LOGGER_LEVEL = logging.DEBUG #accept all messages sent to it
+	DEFAULT_HANDLER_LEVEL = logging.DEBUG
+	DX_FASTQ_FOLDER = "/stage0_bcl2fastq/fastqs"
+
+	def __init__(self,dx_username,dx_project_name=False,sreq_id=False,billed_to=None):
+		"""
+		Args : sreq_id - The Syapse unique ID of a SequencingRequest object.
+		"""
+		self.billing_account = billed_to
+		if not self.billing_account:
+			self.billing_account = None
+			#Making sure its set to None in this case, b/c the user could have passed in an empty string.
+			# Needs to be None instead b/c dxpy calls that refernce the billing account don't work if this is set to the empty string. None
+			# just means the user doesn't care about which billing account.
+	
+		#LOG INTO DNANEXUS FIRST
+		self.dx_username = dx_username
+		#"module load gbsc/dnanexus/current" to get the script log_into_dnanexus.sh
+		subprocess.check_call("log_into_dnanexus.sh -u {du}".format(du=self.dx_username),shell=True)
+		self.dx_project_name = dx_project_name
+		self.sreq_id = sreq_id
+		if not self.dx_project_name and not self.sreq_id:
+			raise Exception("One of the arguments 'dx_project_name' or 'sreq_id' must be specified.")
+		self._set_dxproject_id()
+		#_set_dxproject_id sets the following instance attributes:
+		# self.project_id
+		# self.dx_project_name
+		# self.sreq_id
+		self._set_sequencing_run_name() #sets self.sequencing_run_name.
+		self._set_sequencing_platform() #sets self.sequencing_platform
+
+	def _set_dxproject_id(self):
+		"""
+		Function : Retrieves the ID of the project in DNAnexus that has the sequencing results for the library specified by
+							 self.sreq_id. It does this by finding the project whose property named 'library_name' is set to
+							 self.sreq_id.  May return None if there isn't yet a project found in DNAnexus yet, which indicates that the
+							 sequencing likely hasn't finished yet.
+		Returns  : str. The DNAnexus project ID or the empty string if a project wasn't found.
+		"""
+		self.project_id = ""
+		if self.dx_project_name:
+			res = dxpy.find_one_project(billed_to=self.billing_account,zero_ok=True,more_ok=True,name=self.dx_project_name)
+		else:
+			res = dxpy.find_one_project(billed_to=self.billing_account,zero_ok=True,more_ok=True,properties={"library_name":self.sreq_id})
+		if not res:
+			return
+
+		dx_proj_id = res["id"]
+		self.project_id = dx_proj_id
+		dx_proj = dxpy.DXProject(dx_proj_id)
+		self.dx_project_name = dx_proj.name
+		self.sreq_id = dxpy.api.project_describe(object_id=dx_proj_id,input_params={"fields": {"properties": True}})["properties"]["library_name"]
+
+	def _set_sequencing_run_name(self):
+		"""
+		Function : Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
+		"""
+		run_name = self.UHTS.get_runinfo_by_library_name(library_name=self.sreq_id).keys()[0]
+		self.sequencing_run_name = run_name
+
+	def _set_sequencing_platform(self):
+		"""
+		Function : Sets the self.sequencing_platform attribute to the sequencing platform name.
+							 Currently, only knows about the HiSeq2000 and HiSeq4000 platforms.
+		Raises   : Exception if the platform is not recognized.
+		"""
+		ri = self.UHTS.getruninfo(self.sequencing_run_name)["run_info"]
+		platform = ri["platform"]
+		if platform == "hiseq4000":
+			platform == "HiSeq4000"
+		elif platform == "hiseq2000":
+			platform == "HiSeq2000"
+		else:
+			raise Exception("Unknown platform {platform} for sequencing run {run}".format(platform=platform,run=self.sequencing_run_name))
+		self.sequencing_platform = platform
+
+	def get_run_details_json(self):
+		"""
+		Function : Retrieves the JSON object for the stats in the file named run_details.json in the project specified by self.project_id.
+		Returns  : JSON object of the run details.
+		"""
+		run_details_json_filename = "run_details.json"
+		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.project_id,name=run_details_json_filename)["id"]
+		dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.project_id,filename=run_details_json_filename)
+		fh = open(run_details_json_filename,'r')
+		run_details_json = json.load(fh)
+		return run_details_json
+	
+	
+	def get_sample_stats_json(self,barcode=None):
+		"""
+		Function : Retrieves the JSON object for the stats in the file named sample_stats.json in the project specified by self.project_id.
+							 barcode - str. The barcode for the sample.
+		Returns  : A list of dicts if barcode=None, otherwise a dict for the given barcode.
+		"""
+		sample_stats_json_filename = "sample_stats.json"
+		sample_stats_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=False,project=self.project_id,name=sample_stats_json_filename)["id"]
+		dxpy.download_dxfile(dxid=sample_stats_json_id,project=self.project_id,filename=sample_stats_json_filename)
+		fh = open(sample_stats_json_filename,'r')
+		sample_stats_json = json.load(fh)
+	
+		if not barcode:
+			return sample_stats_json
+	
+		for d in sample_stats_json:
+			sample_barcode = d["Sample name"]
+			if sample_barcode == barcode:
+				return d
+		if barcode:
+			raise DnanexusBarcodeNotFound("Barcode {barcode} for {sreq_id} not found in {sample_stats_json_filename} in project {project}.".format(barcode=barcode,sreq_id=self.sreq_id,sample_stats_json_filename=sample_stats_json_filename,project=self.project_id))
+	
+	def download_fastqs(self,dest_dir,barcode="",overwrite=False):
+		"""
+		Function : Downloads all FASTQ files in the project that match the specified barcode, or if a barcode isn't given, all FASTQ files as in this case it is assumed that this is not
+							 a multiplexed experiment. Files are downloaded to the directory specified by dest_dir. 
+		Args     : barcode - str. The barcode sequence used. If not set, then it is assumed that barcodes were not used (no multiplexing). 
+							 dest_dir - The local directory in which the FASTQs will be downloaded.
+							 overwrite - bool. If True, then if the file to download already exists in dest_dir, the file will be 
+										downloaded again, overwriting it. If False, the file will not be downloaded again from DNAnexus.
+		Returns  : dict. Keys are the barcode names, or if non-barcoded, the read number names. 
+		Raises   : Exception() if barcode is specified and less than or greater than 2 FASTQ files are found.
+		"""
+		barcode_glob = "*_{barcode}_*".format(barcode=barcode)
+		if barcode:
+			fastqs= dxpy.find_data_objects(project=self.project_id,folder=self.DX_FASTQ_FOLDER,name=barcode_glob,name_mode="glob")
+		else:
+			fastqs= dxpy.find_data_objects(project=self.project_id,folder=self.DX_FASTQ_FOLDER,name="*.fastq.gz",name_mode="glob")
+		fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
+		if not len(fastqs):
+			msg = "No FASTQ files found for run {run} ".format(run=proj_name)
+			if barcode:
+				msg += "and barcode {barcode}.".format(barcode=barcode)
+			raise Exception(msg)
+		if len(fastqs) != 2 and barcode:
+			raise Exception("Expected at most two FASTQ files for a given barcode - one for the foward reads and and another for the reverse reads.")
+
+		dico = {}
+	
+		for f in fastqs:
+			props = dxpy.api.file_describe(object_id=f.id, input_params={"fields": {"properties": True}})["properties"]
+			read_num = int(props["read"])
+			barcode = props["barcode"]
+			name = f.name
+			filedest = os.path.abspath(os.path.join(dest_dir,name))
+			if os.path.exists(filedest):
+				if overwrite:
+					print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
+					dxpy.download_dxfile(f,filedest)
+			else:
+				print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
+				dxpy.download_dxfile(f,filedest)
+
+			if barcode:
+				if barcode not in dico:
+					dico[barcode] = {}
+				if read_num in dico[barcode]:
+					raise Exception("Found mutliple FASTQ files with read number {read_num} for barcode {barcode}, and expected only one.".format(read_num=read_num,barcode=barcode))
+				dico[barcode][read_num] = filedest
+			else:
+				if read_num in dico:
+					raise Exception("Found mutliple FASTQ files with read number {read_num}, and expected only one. If this is a multiplexed run, be sure to specify the barcode.".format(read_num=read_num))
+				dico[read_num] = filedest
+		return dico
+			
+
+				
+
+#logger = logging.getLogger(__name__)
+#logger.setLevel(LOGGER_LEVEL)
+#formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:   %(message)s')
+#fhandler = logging.FileHandler(filename=logFile,mode='a')
+#fhandler.setLevel(logLevel)
+#fhandler.setFormatter(formatter)
+#chandler = logging.StreamHandler(sys.stdout)
+#chandler.setLevel(logLevel)
+#chandler.setFormatter(formatter)
+#logger.addHandler(fhandler)
+#logger.addHandler(chandler)
