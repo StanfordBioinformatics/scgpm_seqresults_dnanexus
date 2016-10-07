@@ -32,7 +32,10 @@ chandler.setLevel(logging.DEBUG)
 chandler.setFormatter(formatter)
 logger.addHandler(chandler)
 
-def accept_project_transfers(dx_username,access_level,queue,org):
+class DxProjectMissingQueueProperty(Exception):
+	pass
+
+def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=None):
 	"""
 	Function :
 	Args     : dx_username - The DNAnexus login user name that is to receive pending transfers. An API token must have already been
@@ -45,23 +48,31 @@ def accept_project_transfers(dx_username,access_level,queue,org):
 									   this value for the queue property will be transferred to the specified org.
 						 org - The name of the DNAnexus org under which to accept the project transfers for projects that have their queue property
 									 set to the value of the 'queue' argument.
+						 share_with_org - Set this argument if you'd like to share the transferred projects with the org so that all users of the 
+							 org will have access to the project. The value you supply should be the access level that members of the org will have.
 	Returns  :
 	"""
 	dx_username = gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
 	gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
 	org = gbsc_dnanexus.utils.add_dx_orgprefix(org)
-	pending_tansfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
+	pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
 	#pending_transfers is a list of project IDs
 	transferred = []
-	for proj_id in pendingTransfers:
-		dx_proj = dxpy.DXProjecdt(proj_id)
+	for proj_id in pending_transfers:
+		dx_proj = dxpy.DXProject(proj_id)
 		props = dx_proj.describe(input_params={"properties": True})["properties"]
-		project_queue = props["queue"]	
+		try:
+			project_queue = props["queue"]	
+		except KeyError:
+			raise DxProjectMissingQueueProperty("DNAnexus project {proj_name} ({proj_id}) is missing the queue property.".format(proj_name=dx_proj.name,proj_id=proj_id))
 		if queue != project_queue:
 			continue
-		logger.info("Accepting project transfer of {proj_id} for user {user}, to be billed under the org {org}.".format(proj_id=proj_id,user=dx_username,org=org))
+		logger.info("Accepting project transfer of {proj_name} ({proj_id}) for user {user}, to be billed under the org {org}.".format(proj_name=dx_proj.name,proj_id=proj_id,user=dx_username,org=org))
 		dxpy.DXHTTPRequest("/" + proj_id + "/acceptTransfer", {"billTo": org })
 		transferred.append(dx_proj.name)
+		if share_with_org:
+			logger.info("Sharing project {proj_id} with {org} with access level {share_with_org}.".format(proj_id=proj_id,org=org,share_with_org=share_with_org))
+			dxpy.api.project_invite(object_id=proj_id,input_params={"invitee": org,"level": share_with_org})
 	return transferred
 
 	
@@ -132,7 +143,7 @@ class DxSeqResults:
 							 sequencing likely hasn't finished yet.
 		Returns  : str. The DNAnexus project ID or the empty string if a project wasn't found.
 		"""
-		if self.dx_project_id
+		if self.dx_project_id:
 			dx_proj = dxpy.DXProject(dxid=self.dx_project_id)
 		elif self.dx_project_name:
 			res = dxpy.find_one_project(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,name=self.dx_project_name)
