@@ -7,7 +7,7 @@
 
 ###
 #ENVIRONMENT MODULES
-#	1) gbsc/encode/prod
+#	1) gbsc/scgpm_seqresults_dnanexus/current
 ###
 
 import pdb
@@ -16,8 +16,10 @@ import os
 import sys
 import logging
 from argparse import ArgumentParser
-import dxpy #module load dx-toolkit/dx-toolkit
 import json
+
+
+import dxpy #module load dx-toolkit/dx-toolkit
 
 import scgpm_lims #module load scgpm_lims/current gbsc/limshostenv/prod
 #The environment module gbsc/dnanexus/current should also be loaded in order to log into DNAnexus
@@ -33,6 +35,9 @@ chandler.setFormatter(formatter)
 logger.addHandler(chandler)
 
 class DxProjectMissingQueueProperty(Exception):
+	pass
+
+class DxMultipleProjectsWithSameLibraryName(Exception):
 	pass
 
 def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=None):
@@ -86,7 +91,12 @@ class DxSeqResults:
 	LOG_LEVELS = [x for x in logging._levelNames if isinstance(x,str)]
 	LOGGER_LEVEL = logging.DEBUG #accept all messages sent to it
 	DEFAULT_HANDLER_LEVEL = logging.DEBUG
-	DX_FASTQ_FOLDER = "/stage0_bcl2fastq/fastqs"
+	DX_RAW_DATA_FOLDER = "/raw_data"
+	DX_BCL2FASTQ_FOLDER = "/stage0_bcl2fastq"
+	DX_SAMPLESHEET_DIR = os.path.join(DX_BCL2FASTQ_FOLDER,"miscellany")
+	DX_FASTQ_FOLDER = os.path.join(DX_BCL2FASTQ_FOLDER,"fastqs")
+	DX_FASTQC_FOLDER = "/stage1_qc/fastqc_reports"
+	DX_QC_REPORT_FOLDER = "/stage2_qc_report"
 
 	def __init__(self,dx_username,dx_project_id=False,dx_project_name=False,library_name=False,billing_account_id=None):
 		"""
@@ -142,17 +152,24 @@ class DxSeqResults:
 							 self.library_name.  May return None if there isn't yet a project found in DNAnexus yet, which indicates that the
 							 sequencing likely hasn't finished yet.
 		Returns  : str. The DNAnexus project ID or the empty string if a project wasn't found.
+		Raises   : scgpm_seqresults_dnanexus.dnanexus_utils.DxMultipleProjectsWithSameLibraryName() if the search is by self.library_name, and multiple DNAnexus projects have that library name.
 		"""
+		dx_proj = ""
 		if self.dx_project_id:
 			dx_proj = dxpy.DXProject(dxid=self.dx_project_id)
 		elif self.dx_project_name:
 			res = dxpy.find_one_project(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,name=self.dx_project_name)
-			dx_proj = dxpy.DXProject(dxid=res["id"])
+			if res:
+				dx_proj = dxpy.DXProject(dxid=res["id"])
 		else:
-			res = dxpy.find_one_project(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,properties={"library_name":self.library_name})
-			dx_proj = dxpy.DXProject(dxid=res["id"])
+			res = dxpy.find_projects(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,properties={"library_name":self.library_name})
+			if len(res) > 1:
+				projects = [x.id for x in res]
+				raise DxMultipleProjectsWithSameLibraryName("Error - Multiple DNAnexus projects have the same value for the library_name property value of {library_name}. The projects are {projects}.".format(library_name=self.library_name,projects=projects))
+			if res:
+				dx_proj = dxpy.DXProject(dxid=res[0]["id"])
 
-		if not res:
+		if not dx_proj:
 			return
 
 		self.dx_project_id = dx_proj.id
@@ -216,6 +233,126 @@ class DxSeqResults:
 				return d
 		if barcode:
 			raise DnanexusBarcodeNotFound("Barcode {barcode} for {library_name} not found in {sample_stats_json_filename} in project {project}.".format(barcode=barcode,library_name=self.library_name,sample_stats_json_filename=sample_stats_json_filename,project=self.project_id))
+
+	def download_metadata_tar(self,download_dir):	
+		"""
+		Function : Downloads the ${run_name}.metadata.tar file from the DNAnexus sequencing results project.
+		Args     : download_dir - The local directory path to download the QC report to.
+		Returns  : str. The filepath to the downloaded metadata tarball.
+		"""
+		is not os.path.isdir(download_dir):
+			os.makedirs(download_dir)	
+		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_RAW_DATA_FOLDER,name="*metadata.tar",name_mode="glob")
+		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
+		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
+		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
+		download_file_name = os.path.join(download_dir,dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		return download_file_name
+
+	def download_run_details_json(self,download_dir):
+		"""
+		Function : Downloads the run_details.json and the barcodes.json from the DNAnexus sequencing results project.
+		Args     : download_dir - The local directory path to download the QC report to.
+		Returns  : str. The filepath to the downloaded run_details.json file.
+		"""
+		is not os.path.isdir(download_dir):
+			os.makedirs(download_dir)	
+		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_QC_REPORT_FOLDER,name="run_details.json",name_mode="exact")
+		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
+		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
+		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
+		download_file_name = os.path.join(download_dir,dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		return download_file_name
+
+	def download_barcodes_json(self,download_dir):
+		"""
+		Function : Downloads the run_details.json and the barcodes.json from the DNAnexus sequencing results project.
+		Args     : download_dir - The local directory path to download the QC report to.
+		Returns  : str. The filepath to the downloaded barcodes.json file.
+		"""
+		is not os.path.isdir(download_dir):
+			os.makedirs(download_dir)	
+		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_QC_REPORT_FOLDER,name="barcodes.json",name_mode="exact")
+		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
+		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
+		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
+		download_file_name = os.path.join(download_dir,dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		return download_file_name
+
+	def download_samplesheet(self,download_dir):
+		"""
+		Function : Downloads the SampleSheet used in demultiplexing from the DNAnexus sequencing results project.
+		Args     : download_dir - The local directory path to download the QC report to.
+		Returns  : str. The filepath to the downloaded QC report.
+		"""
+		is not os.path.isdir(download_dir):
+			os.makedirs(download_dir)	
+		res = dxpy.find_one_data_object(project=self.project_id,folder=self.DX_SAMPLESHEET_FOLDER,name="*_samplesheet.csv",name_mode="glob")
+		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
+		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
+		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
+		download_file_name = os.path.join(download_dir,dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		return download_file_name
+
+	def download_qc_report(self,download_dir):
+		"""
+		Function : Downloads the QC report from the DNAnexus sequencing results project.
+		Args     : download_dir - The local directory path to download the QC report to.
+		Returns  : str. The filepath to the downloaded QC report.
+		"""
+		is not os.path.isdir(download_dir):
+			os.makedirs(download_dir)	
+		res = dxpy.find_one_data_object(project=self.project_id,folder=self.DX_QC_REPORT_FOLDER,name="*_QC_Report.pdf",name_mode="glob")
+		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
+		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
+		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
+		download_file_name = os.path.join(download_dir,dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		return download_file_name
+
+	def download_fastqc_reports(self,download_dir):
+		"""
+		Function : Downloads the QC report from the DNAnexus sequencing results project.
+		Args     : download_dir - The local directory path to download the QC report to.
+		Returns  : str. The filepath to the downloaded FASTQC reports folder.
+		"""
+		is not os.path.isdir(download_dir):
+			os.makedirs(download_dir)	
+		cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQC_FOLDER,download_dir=download_dir)
+		subprocess.check_call(cmd,shell=True)
+		#rename the downloaded folder to ${download_dir}/FASTQC
+		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQC"))
+		return os.path.join(download_dir,"FASTQC")
+
+	def download_project(self,download_dir):
+		"""
+		Function :
+		Args     :
+		Returns  :
+		"""
+		if not os.path.isdir(download_dir):
+			os.makedirs(download_dir)
+	  cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_BCL2FASTQ_FOLDER,download_dir=download_dir)
+		subprocess.check_call(cmd,shell=True)
+		#rename the downloaded folder to ${download_dir}/FASTQ
+		os.rename(os.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQ"))
+		#download the FASTQC files
+		self.download_fastqc_reports(download_dir=download_dir)
+		#download the in-house QC report
+		self.download_qc_report(download_dir=download_dir)
+		#download the SampleSheet used in demultiplexing
+		self.download_samplesheet(download_dir=download_dir)
+		#download the run_details.json
+		self.download_run_details_json(download_dir=download_dir)
+		#download the barcodes.json
+		self.download_barcodes_json(download_dir=download_dir)
+		#download the ${run_name}.metadata.tar file.
+		self.download_metadata_tar(download_dir=download_dir)
+		
 	
 	def download_fastqs(self,dest_dir,barcode="",overwrite=False):
 		"""
