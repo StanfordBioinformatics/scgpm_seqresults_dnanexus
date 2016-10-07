@@ -77,62 +77,82 @@ class DxSeqResults:
 	DEFAULT_HANDLER_LEVEL = logging.DEBUG
 	DX_FASTQ_FOLDER = "/stage0_bcl2fastq/fastqs"
 
-	def __init__(self,dx_username,dx_project_name=False,sreq_id=False,billed_to=None):
+	def __init__(self,dx_username,dx_project_id=False,dx_project_name=False,library_name=False,billing_account_id=None):
 		"""
-		Args : sreq_id - The Syapse unique ID of a SequencingRequest object.
-					 dx_username - str. The login name of a DNAnexus user.
+		Description : Logs the specified user into DNAnexus, and then finds the DNAnexus sequencing results project that was uploaded by 
+									SCGPM. The project can be precisely retrieved if the projecd ID is specified (via the dx_project_id argument).
+									Otherwise, you can uhe dx_project_name argument if you know the name, or use the library_name argument if you know the
+								  name of the library that was submitted to the SCGPM sequencing center. All sequencing
+									result projects uploaded to DNAnexus by SCGPM contain a property named 'library_name', and projects will be searched
+									on this property for a matching library name when the library_name argument is specified. If both the library_name
+								  and the dx_project_name arguments are specified, only the latter is used in finding a project match. The
+								  billing_account argument can optionally be specifed to restrict all project searches to only those that are
+									billed to that particular billing account (unless dx_project_id is specified in which case the DNAnexus project is
+									directly retrieved).
+	  Args : dx_username - str. The login name of a DNAnexus user.
+		Args : dx_project_id - str. The ID of the DNAnexus project. If specified, no project search will be performed as it will be
+						directly retrieved.
+					 dx_project_name - the name of a DNAnexus project containing sequencing results that were uploaded by SCGPM. 
+					 library_name - str. The library name of the sample that was sequenced. This is name of the library that was 
+														submitted to SCGPM for sequencing. This is added as a property to all sequencing result projects through
+														the 'library_name' property.
+					 billing_account_id - The name of the DNAnexus billing account that the project belongs to. This will only be used to restrict 
+						the search of projects that the user can see to only those billed by the specified account.
 		"""
-		gbsc_dnanexus.utils.strip_dx_userprefix(dx_username)
-		gbsc_dnanexus_utils.add_dx_userprefix(dx_username)
-		self.billing_account = billed_to
-		if not self.billing_account:
-			self.billing_account = None
+		self.dx_username = gbsc_dnanexus_utils.add_dx_userprefix(dx_username)
+		self.billing_account_id = billing_account_id
+		if self.billing_account_id:
+			gbsc_dnanexus.utils.validate_billing_to_prefix(billing_account_id=self.billing_account_id,exception=True)
+		if not self.billing_account_id:
+			self.billing_account_id = None
 			#Making sure its set to None in this case, b/c the user could have passed in an empty string.
 			# Needs to be None instead b/c dxpy calls that refernce the billing account don't work if this is set to the empty string. None
 			# just means the user doesn't care about which billing account.
 	
 		#LOG INTO DNANEXUS FIRST
-		self.dx_username = dx_username
 		gbsc_dnanexus.utils.log_into_dnanexus(self.dx_username)
+		self.dx_project_id = dx_project_id
 		self.dx_project_name = dx_project_name
-		self.sreq_id = sreq_id
-		if not self.dx_project_name and not self.sreq_id:
-			raise Exception("One of the arguments 'dx_project_name' or 'sreq_id' must be specified.")
+		self.library_name = library_name
+		if not self.dx_project_id and not self.dx_project_name and not self.library_name:
+			raise Exception("One of the arguments 'dx_project_id', 'dx_project_name' or 'library_name' must be specified.")
 		self._set_dxproject_id()
 		#_set_dxproject_id sets the following instance attributes:
 		# self.project_id
 		# self.dx_project_name
-		# self.sreq_id
+		# self.library_name
 		self._set_sequencing_run_name() #sets self.sequencing_run_name.
 		self._set_sequencing_platform() #sets self.sequencing_platform
 
 	def _set_dxproject_id(self):
 		"""
 		Function : Retrieves the ID of the project in DNAnexus that has the sequencing results for the library specified by
-							 self.sreq_id. It does this by finding the project whose property named 'library_name' is set to
-							 self.sreq_id.  May return None if there isn't yet a project found in DNAnexus yet, which indicates that the
+							 self.library_name. It does this by finding the project whose property named 'library_name' is set to
+							 self.library_name.  May return None if there isn't yet a project found in DNAnexus yet, which indicates that the
 							 sequencing likely hasn't finished yet.
 		Returns  : str. The DNAnexus project ID or the empty string if a project wasn't found.
 		"""
-		self.project_id = ""
-		if self.dx_project_name:
-			res = dxpy.find_one_project(billed_to=self.billing_account,zero_ok=True,more_ok=True,name=self.dx_project_name)
+		if self.dx_project_id
+			dx_proj = dxpy.DXProject(dxid=self.dx_project_id)
+		elif self.dx_project_name:
+			res = dxpy.find_one_project(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,name=self.dx_project_name)
+			dx_proj = dxpy.DXProject(dxid=res["id"])
 		else:
-			res = dxpy.find_one_project(billed_to=self.billing_account,zero_ok=True,more_ok=True,properties={"library_name":self.sreq_id})
+			res = dxpy.find_one_project(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,properties={"library_name":self.library_name})
+			dx_proj = dxpy.DXProject(dxid=res["id"])
+
 		if not res:
 			return
 
-		dx_proj_id = res["id"]
-		self.project_id = dx_proj_id
-		dx_proj = dxpy.DXProject(dx_proj_id)
+		self.dx_project_id = dx_proj.id
 		self.dx_project_name = dx_proj.name
-		self.sreq_id = dxpy.api.project_describe(object_id=dx_proj_id,input_params={"fields": {"properties": True}})["properties"]["library_name"]
+		self.library_name = dxpy.api.project_describe(object_id=dx_proj.id,input_params={"fields": {"properties": True}})["properties"]["library_name"]
 
 	def _set_sequencing_run_name(self):
 		"""
 		Function : Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
 		"""
-		run_name = self.UHTS.get_runinfo_by_library_name(library_name=self.sreq_id).keys()[0]
+		run_name = self.UHTS.get_runinfo_by_library_name(library_name=self.library_name).keys()[0]
 		self.sequencing_run_name = run_name
 
 	def _set_sequencing_platform(self):
@@ -184,7 +204,7 @@ class DxSeqResults:
 			if sample_barcode == barcode:
 				return d
 		if barcode:
-			raise DnanexusBarcodeNotFound("Barcode {barcode} for {sreq_id} not found in {sample_stats_json_filename} in project {project}.".format(barcode=barcode,sreq_id=self.sreq_id,sample_stats_json_filename=sample_stats_json_filename,project=self.project_id))
+			raise DnanexusBarcodeNotFound("Barcode {barcode} for {library_name} not found in {sample_stats_json_filename} in project {project}.".format(barcode=barcode,library_name=self.library_name,sample_stats_json_filename=sample_stats_json_filename,project=self.project_id))
 	
 	def download_fastqs(self,dest_dir,barcode="",overwrite=False):
 		"""
