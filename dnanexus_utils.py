@@ -92,7 +92,7 @@ class DxSeqResults:
 	DEFAULT_HANDLER_LEVEL = logging.DEBUG
 	DX_RAW_DATA_FOLDER = "/raw_data"
 	DX_BCL2FASTQ_FOLDER = "/stage0_bcl2fastq"
-	DX_SAMPLESHEET_DIR = os.path.join(DX_BCL2FASTQ_FOLDER,"miscellany")
+	DX_SAMPLESHEET_FOLDER  = os.path.join(DX_BCL2FASTQ_FOLDER,"miscellany")
 	DX_FASTQ_FOLDER = os.path.join(DX_BCL2FASTQ_FOLDER,"fastqs")
 	DX_FASTQC_FOLDER = "/stage1_qc/fastqc_reports"
 	DX_QC_REPORT_FOLDER = "/stage2_qc_report"
@@ -138,7 +138,7 @@ class DxSeqResults:
 			raise Exception("One of the arguments 'dx_project_id', 'dx_project_name' or 'library_name' must be specified.")
 		self._set_dxproject_id()
 		#_set_dxproject_id sets the following instance attributes:
-		# self.project_id
+		# self.dx_project_id
 		# self.dx_project_name
 		# self.library_name
 		self._set_sequencing_run_name() #sets self.sequencing_run_name.
@@ -199,12 +199,12 @@ class DxSeqResults:
 
 	def get_run_details_json(self):
 		"""
-		Function : Retrieves the JSON object for the stats in the file named run_details.json in the project specified by self.project_id.
+		Function : Retrieves the JSON object for the stats in the file named run_details.json in the project specified by self.dx_project_id.
 		Returns  : JSON object of the run details.
 		"""
 		run_details_json_filename = "run_details.json"
-		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.project_id,name=run_details_json_filename)["id"]
-		dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.project_id,filename=run_details_json_filename)
+		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name=run_details_json_filename)["id"]
+		dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=run_details_json_filename)
 		fh = open(run_details_json_filename,'r')
 		run_details_json = json.load(fh)
 		return run_details_json
@@ -212,13 +212,13 @@ class DxSeqResults:
 	
 	def get_sample_stats_json(self,barcode=None):
 		"""
-		Function : Retrieves the JSON object for the stats in the file named sample_stats.json in the project specified by self.project_id.
+		Function : Retrieves the JSON object for the stats in the file named sample_stats.json in the project specified by self.dx_project_id.
 							 barcode - str. The barcode for the sample.
 		Returns  : A list of dicts if barcode=None, otherwise a dict for the given barcode.
 		"""
 		sample_stats_json_filename = "sample_stats.json"
-		sample_stats_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=False,project=self.project_id,name=sample_stats_json_filename)["id"]
-		dxpy.download_dxfile(dxid=sample_stats_json_id,project=self.project_id,filename=sample_stats_json_filename)
+		sample_stats_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=False,project=self.dx_project_id,name=sample_stats_json_filename)["id"]
+		dxpy.download_dxfile(dxid=sample_stats_json_id,project=self.dx_project_id,filename=sample_stats_json_filename)
 		fh = open(sample_stats_json_filename,'r')
 		sample_stats_json = json.load(fh)
 	
@@ -230,7 +230,7 @@ class DxSeqResults:
 			if sample_barcode == barcode:
 				return d
 		if barcode:
-			raise DnanexusBarcodeNotFound("Barcode {barcode} for {library_name} not found in {sample_stats_json_filename} in project {project}.".format(barcode=barcode,library_name=self.library_name,sample_stats_json_filename=sample_stats_json_filename,project=self.project_id))
+			raise DnanexusBarcodeNotFound("Barcode {barcode} for {library_name} not found in {sample_stats_json_filename} in project {project}.".format(barcode=barcode,library_name=self.library_name,sample_stats_json_filename=sample_stats_json_filename,project=self.dx_project_id))
 
 	def download_metadata_tar(self,download_dir):	
 		"""
@@ -240,7 +240,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_RAW_DATA_FOLDER,name="*metadata.tar",name_mode="glob")
+		res = dxpy.find_one_data_object(project=self.dx_project_id,folder=self.DX_RAW_DATA_FOLDER,name="*metadata.tar",name_mode="glob")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
@@ -257,7 +257,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_QC_REPORT_FOLDER,name="run_details.json",name_mode="exact")
+		res = dxpy.find_one_data_object(project=self.dx_project_id,folder=self.DX_QC_REPORT_FOLDER,name="run_details.json",name_mode="exact")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
@@ -274,7 +274,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_QC_REPORT_FOLDER,name="barcodes.json",name_mode="exact")
+		res = dxpy.find_one_data_object(project=self.dx_project_id,folder=self.DX_QC_REPORT_FOLDER,name="barcodes.json",name_mode="exact")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
@@ -291,7 +291,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		res = dxpy.find_one_data_object(project=self.project_id,folder=self.DX_SAMPLESHEET_FOLDER,name="*_samplesheet.csv",name_mode="glob")
+		res = dxpy.find_one_data_object(project=self.dx_project_id,folder=self.DX_SAMPLESHEET_FOLDER,name="*_samplesheet.csv",name_mode="glob")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
@@ -308,7 +308,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		res = dxpy.find_one_data_object(project=self.project_id,folder=self.DX_QC_REPORT_FOLDER,name="*_QC_Report.pdf",name_mode="glob")
+		res = dxpy.find_one_data_object(project=self.dx_project_id,folder=self.DX_QC_REPORT_FOLDER,name="*_QC_Report.pdf",name_mode="glob")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
@@ -329,7 +329,7 @@ class DxSeqResults:
 		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQC
-		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQC"))
+		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQC"))
 		return os.path.join(download_dir,"FASTQC")
 
 	def download_project(self,download_dir):
@@ -340,10 +340,6 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)
-		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,download_dir=download_dir)
-		subprocess.check_call(cmd,shell=True)
-		#rename the downloaded folder to ${download_dir}/FASTQ
-		os.rename(os.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQ"))
 		#download the FASTQC files
 		self.download_fastqc_reports(download_dir=download_dir)
 		#download the in-house QC report
@@ -356,6 +352,11 @@ class DxSeqResults:
 		self.download_barcodes_json(download_dir=download_dir)
 		#download the ${run_name}.metadata.tar file.
 		self.download_metadata_tar(download_dir=download_dir)
+		#download the FASTQ files into a FASTQ folder
+		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,download_dir=download_dir)
+		subprocess.check_call(cmd,shell=True)
+		#rename the downloaded folder to ${download_dir}/FASTQ
+		os.rename(os.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQ"))
 		
 	
 	def download_fastqs(self,dest_dir,barcode="",overwrite=False):
@@ -371,9 +372,9 @@ class DxSeqResults:
 		"""
 		barcode_glob = "*_{barcode}_*".format(barcode=barcode)
 		if barcode:
-			fastqs= dxpy.find_data_objects(project=self.project_id,folder=self.DX_FASTQ_FOLDER,name=barcode_glob,name_mode="glob")
+			fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=barcode_glob,name_mode="glob")
 		else:
-			fastqs= dxpy.find_data_objects(project=self.project_id,folder=self.DX_FASTQ_FOLDER,name="*.fastq.gz",name_mode="glob")
+			fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name="*.fastq.gz",name_mode="glob")
 		fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
 		if not len(fastqs):
 			msg = "No FASTQ files found for run {run} ".format(run=proj_name)
