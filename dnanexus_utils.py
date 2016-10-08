@@ -246,7 +246,7 @@ class DxSeqResults:
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
 		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
-		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=download_file_name)
 		return download_file_name
 
 	def download_run_details_json(self,download_dir):
@@ -263,7 +263,7 @@ class DxSeqResults:
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
 		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
-		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=download_file_name)
 		return download_file_name
 
 	def download_barcodes_json(self,download_dir):
@@ -280,7 +280,7 @@ class DxSeqResults:
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
 		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
-		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=download_file_name)
 		return download_file_name
 
 	def download_samplesheet(self,download_dir):
@@ -297,7 +297,7 @@ class DxSeqResults:
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
 		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
-		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=download_file_name)
 		return download_file_name
 
 	def download_qc_report(self,download_dir):
@@ -314,7 +314,7 @@ class DxSeqResults:
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
 		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
-		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
+		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=download_file_name)
 		return download_file_name
 
 	def download_fastqc_reports(self,download_dir):
