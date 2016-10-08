@@ -179,8 +179,7 @@ class DxSeqResults:
 		"""
 		Function : Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
 		"""
-		run_name = self.UHTS.get_runinfo_by_library_name(library_name=self.library_name).keys()[0]
-		self.sequencing_run_name = run_name
+		self.sequencing_run_name = dxpy.api.project_describe(object_id=self.dx_project_id,input_params={"fields": {"properties": True}})["properties"]["seq_run_name"]
 
 	def _set_sequencing_platform(self):
 		"""
@@ -326,7 +325,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQC_FOLDER,download_dir=download_dir)
+		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQC_FOLDER,download_dir=download_dir)
 		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQC
@@ -341,7 +340,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)
-		cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_BCL2FASTQ_FOLDER,download_dir=download_dir)
+		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,download_dir=download_dir)
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQ
 		os.rename(os.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQ"))
