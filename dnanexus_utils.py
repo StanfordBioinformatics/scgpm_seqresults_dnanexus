@@ -356,7 +356,7 @@ class DxSeqResults:
 		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,download_dir=download_dir)
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQ
-		os.rename(os.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQ"))
+		os.rename(o.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQ"))
 		
 	
 	def download_fastqs(self,dest_dir,barcode="",overwrite=False):
