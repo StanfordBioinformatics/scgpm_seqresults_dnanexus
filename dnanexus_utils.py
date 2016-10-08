@@ -21,9 +21,8 @@ import json
 
 import dxpy #module load dx-toolkit/dx-toolkit
 
-import scgpm_lims #module load scgpm_lims/current gbsc/limshostenv/prod
-#The environment module gbsc/dnanexus/current should also be loaded in order to log into DNAnexus
-import gbsc_dnanexus.utils #module load gbsc/gbsc_dnanexus/current
+import scgpm_lims #submodule
+import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #submodule
 
 
 logger = logging.getLogger(__name__)
@@ -57,9 +56,9 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 							 org will have access to the project. The value you supply should be the access level that members of the org will have.
 	Returns  :
 	"""
-	dx_username = gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
-	gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
-	org = gbsc_dnanexus.utils.add_dx_orgprefix(org)
+	dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
+	scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
+	org = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_orgprefix(org)
 	pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
 	#pending_transfers is a list of project IDs
 	transferred = []
@@ -120,10 +119,10 @@ class DxSeqResults:
 					 billing_account_id - The name of the DNAnexus billing account that the project belongs to. This will only be used to restrict 
 						the search of projects that the user can see to only those billed by the specified account.
 		"""
-		self.dx_username = gbsc_dnanexus_utils.add_dx_userprefix(dx_username)
+		self.dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
 		self.billing_account_id = billing_account_id
 		if self.billing_account_id:
-			gbsc_dnanexus.utils.validate_billing_to_prefix(billing_account_id=self.billing_account_id,exception=True)
+			scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.validate_billing_to_prefix(billing_account_id=self.billing_account_id,exception=True)
 		if not self.billing_account_id:
 			self.billing_account_id = None
 			#Making sure its set to None in this case, b/c the user could have passed in an empty string.
@@ -131,7 +130,7 @@ class DxSeqResults:
 			# just means the user doesn't care about which billing account.
 	
 		#LOG INTO DNANEXUS FIRST
-		gbsc_dnanexus.utils.log_into_dnanexus(self.dx_username)
+		scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(self.dx_username)
 		self.dx_project_id = dx_project_id
 		self.dx_project_name = dx_project_name
 		self.library_name = library_name
@@ -240,7 +239,7 @@ class DxSeqResults:
 		Args     : download_dir - The local directory path to download the QC report to.
 		Returns  : str. The filepath to the downloaded metadata tarball.
 		"""
-		is not os.path.isdir(download_dir):
+		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_RAW_DATA_FOLDER,name="*metadata.tar",name_mode="glob")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
@@ -257,7 +256,7 @@ class DxSeqResults:
 		Args     : download_dir - The local directory path to download the QC report to.
 		Returns  : str. The filepath to the downloaded run_details.json file.
 		"""
-		is not os.path.isdir(download_dir):
+		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_QC_REPORT_FOLDER,name="run_details.json",name_mode="exact")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
@@ -274,7 +273,7 @@ class DxSeqResults:
 		Args     : download_dir - The local directory path to download the QC report to.
 		Returns  : str. The filepath to the downloaded barcodes.json file.
 		"""
-		is not os.path.isdir(download_dir):
+		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		res = dxpy.find_one_data_object(project=self.project_id,folder=self.self.DX_QC_REPORT_FOLDER,name="barcodes.json",name_mode="exact")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
@@ -291,7 +290,7 @@ class DxSeqResults:
 		Args     : download_dir - The local directory path to download the QC report to.
 		Returns  : str. The filepath to the downloaded QC report.
 		"""
-		is not os.path.isdir(download_dir):
+		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		res = dxpy.find_one_data_object(project=self.project_id,folder=self.DX_SAMPLESHEET_FOLDER,name="*_samplesheet.csv",name_mode="glob")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
@@ -308,7 +307,7 @@ class DxSeqResults:
 		Args     : download_dir - The local directory path to download the QC report to.
 		Returns  : str. The filepath to the downloaded QC report.
 		"""
-		is not os.path.isdir(download_dir):
+		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		res = dxpy.find_one_data_object(project=self.project_id,folder=self.DX_QC_REPORT_FOLDER,name="*_QC_Report.pdf",name_mode="glob")
 		#res will be something like {u'project': u'project-BzqVkxj08kVZbPXk54X0P2JY', u'id': u'file-BzqVkg800Fb0z4437GXJfGY6'}
@@ -325,7 +324,7 @@ class DxSeqResults:
 		Args     : download_dir - The local directory path to download the QC report to.
 		Returns  : str. The filepath to the downloaded FASTQC reports folder.
 		"""
-		is not os.path.isdir(download_dir):
+		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQC_FOLDER,download_dir=download_dir)
 		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
@@ -342,7 +341,7 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)
-	  cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_BCL2FASTQ_FOLDER,download_dir=download_dir)
+		cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_BCL2FASTQ_FOLDER,download_dir=download_dir)
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQ
 		os.rename(os.path.join(download_dir,self.DX_BCL2FASTQ_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQ"))
