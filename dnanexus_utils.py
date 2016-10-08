@@ -247,6 +247,7 @@ class DxSeqResults:
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
+		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
 		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
 		return download_file_name
 
@@ -263,6 +264,7 @@ class DxSeqResults:
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
+		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
 		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
 		return download_file_name
 
@@ -279,6 +281,7 @@ class DxSeqResults:
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
+		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
 		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
 		return download_file_name
 
@@ -295,6 +298,7 @@ class DxSeqResults:
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
+		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
 		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
 		return download_file_name
 
@@ -311,6 +315,7 @@ class DxSeqResults:
 		#dxpy.find_one_data_object() raises a dxpy.exceptions.DXSearchError() if nothing is found.
 		dx_file = dxpy.DXFile(dxid=res["id"],project=res["project"])
 		download_file_name = os.path.join(download_dir,dx_file.name)
+		logger.info("Downloading {filename} to {download_dir}.".format(filename=dx_file.name,download_dir=download_dir))
 		dxpy.bindings.dxfile_functions.download_dxfile(dxid=dx_file,filename=dx_file.name)
 		return download_file_name
 
@@ -323,6 +328,7 @@ class DxSeqResults:
 		is not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		cmd = "dx download {proj_id}{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQC_FOLDER,download_dir=download_dir)
+		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQC
 		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.lstrip("/")),os.path.join(download_dir,"FASTQC"))
