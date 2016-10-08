@@ -1,3 +1,9 @@
 [submodule "scgpm_lims"]
 	path = scgpm_lims
 	url = git@github.com:StanfordBioinformatics/scgpm_lims.git
+[submodule "scgpm_seqresults_dnanexus"]
+	path = scgpm_seqresults_dnanexus
+	url = git@github.com:StanfordBioinformatics/scgpm_seqresults_dnanexus.git
+[submodule "gbsc_dnanexus"]
+	path = gbsc_dnanexus
+	url = https://github.com/StanfordBioinformatics/gbsc_dnanexus.git
