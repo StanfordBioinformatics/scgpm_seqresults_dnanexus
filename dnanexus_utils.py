@@ -340,6 +340,9 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)
+		download_dir = os.path.join(download_dir,self.dx_project_name)
+		if not os.path.isdir(download_dir):
+			os.mkdir(download_dir)
 		#download the FASTQC files
 		self.download_fastqc_reports(download_dir=download_dir)
 		#download the in-house QC report
@@ -353,6 +356,7 @@ class DxSeqResults:
 		#download the ${run_name}.metadata.tar file.
 		self.download_metadata_tar(download_dir=download_dir)
 		#download the FASTQ files into a FASTQ folder
+		logger.info("Downloading the FASTQ files:")
 		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,download_dir=download_dir)
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQ
