@@ -161,7 +161,7 @@ class DxSeqResults:
 			if res:
 				dx_proj = dxpy.DXProject(dxid=res["id"])
 		else:
-			res = dxpy.find_projects(billed_to=self.billing_account_id,zero_ok=True,more_ok=True,properties={"library_name":self.library_name})
+			res = dxpy.find_projects(billed_to=self.billing_account_id,zero_ok=True,properties={"library_name":self.library_name})
 			if len(res) > 1:
 				projects = [x.id for x in res]
 				raise DxMultipleProjectsWithSameLibraryName("Error - Multiple DNAnexus projects have the same value for the library_name property value of {library_name}. The projects are {projects}.".format(library_name=self.library_name,projects=projects))
