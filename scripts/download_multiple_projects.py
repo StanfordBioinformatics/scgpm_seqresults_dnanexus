@@ -49,6 +49,7 @@ for proj in dx_projects:
 	if proj_id in skip_projects:
 		continue
 	cmd = "download_project.py -u {user} --dx-project-id {proj_id} --download-dir {download_dir}".format(user=dx_username,proj_id=proj_id,download_dir=download_dir)
+	print("Running command {cmd}.".format(cmd=cmd))
 	popens.append(subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE))
 for p in popens:
 	stdout,stderr = p.communicate()

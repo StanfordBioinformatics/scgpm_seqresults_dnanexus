@@ -189,7 +189,9 @@ class DxSeqResults:
 		"""
 		ri = self.UHTS.getruninfo(self.sequencing_run_name)["run_info"]
 		platform = ri["platform"]
-		if platform == "hiseq4000":
+		if platform == "miseq":
+			platform = "MiSeq"
+		elif platform == "hiseq4000":
 			platform == "HiSeq4000"
 		elif platform == "hiseq2000":
 			platform == "HiSeq2000"
