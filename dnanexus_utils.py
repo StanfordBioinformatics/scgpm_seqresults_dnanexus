@@ -25,7 +25,7 @@ import scgpm_lims #submodule
 import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #submodule
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:   %(message)s')
 chandler = logging.StreamHandler(sys.stdout)
@@ -366,6 +366,7 @@ class DxSeqResults:
 		Args     :
 		Returns  :
 		"""
+		logger.info("Download DNAnexus project {proj_name} ({proj_id}).".format(proj_name=self.dx_project_name,proj_id=self.dx_project_id))
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)
 		download_dir = os.path.join(download_dir,self.dx_project_name)
