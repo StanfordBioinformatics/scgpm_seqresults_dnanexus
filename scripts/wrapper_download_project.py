@@ -45,10 +45,10 @@ fi
 
 while read dx_proj_id
 do
-	if [[ ${dx_proj_id} =~ ^# ]]
+	if [[ ${dx_proj_id} =~ "^#" ]]
 	then
 		continue
-	end
+	fi	
 
 	lab=$(dx describe ${dx_proj_id} --verbose --json | jq .properties.lab)
 
