@@ -59,4 +59,9 @@ do
 	fi
 
 	download_project.py -u ${dx_user_name} --download-dir ${lab_dir} --dx-project-id ${dx_proj_id} -l ${logfile}
+	if [[ $? -ne 0 ]]
+	then 
+		echo "Error downloading ${dx_proj_id}"
+		exit
+	fi
 done < ${infile}
