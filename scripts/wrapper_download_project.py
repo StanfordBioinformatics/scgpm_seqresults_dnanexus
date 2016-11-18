@@ -45,7 +45,7 @@ fi
 
 while read dx_proj_id
 do
-	if [[ ${dx_proj_id} =~ "^#" ]]
+	if [[ ${dx_proj_id} =~ ^# ]]
 	then
 		continue
 	fi	
