@@ -26,10 +26,10 @@ import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #submodule
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:   %(message)s')
 chandler = logging.StreamHandler(sys.stdout)
-chandler.setLevel(logging.DEBUG)
+chandler.setLevel(logging.INFO)
 chandler.setFormatter(formatter)
 logger.addHandler(chandler)
 
@@ -402,7 +402,7 @@ class DxSeqResults:
 										downloaded again, overwriting it. If False, the file will not be downloaded again from DNAnexus.
 		Raises   : Exception() if barcode is specified and less than or greater than 2 FASTQ files are found.
 		"""
-		fastq_props = self.get_fastq_props(barcode=barcode)
+		fastq_props = self.get_fastq_files_props(barcode=barcode)
 	
 		for f in fastq_props:
 			props = fastq_props[f]
@@ -419,7 +419,7 @@ class DxSeqResults:
 				dxpy.download_dxfile(f,filedest)
 			
 
-	def get_fastq_props(self,barcode=None):
+	def get_fastq_files_props(self,barcode=None):
 		"""
 		Function : Returns the DNAnexus file properties for all FASTQ files in the project that match the specified barcode, or all FASTQ
 							 files if not barcode is specified.
@@ -433,12 +433,12 @@ class DxSeqResults:
 			fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=barcode_glob,name_mode="glob")
 		else:
 			fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name="*.fastq.gz",name_mode="glob")
-		fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
-		if not len(fastqs):
+		if not fastqs:
 			msg = "No FASTQ files found for run {run} ".format(run=proj_name)
 			if barcode:
 				msg += "and barcode {barcode}.".format(barcode=barcode)
 			raise Exception(msg)
+		fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
 
 		dico = {}
 	
