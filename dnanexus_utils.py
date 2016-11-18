@@ -392,7 +392,7 @@ class DxSeqResults:
 		os.rename(os.path.join(download_dir,self.DX_FASTQ_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQ"))
 		
 	
-	def download_fastqs(self,dest_dir,barcode="",overwrite=False):
+	def download_fastqs(self,dest_dir,barcode=None,overwrite=False):
 		"""
 		Function : Downloads all FASTQ files in the project that match the specified barcode, or if a barcode isn't given, all FASTQ files as in this case it is assumed that this is not
 							 a multiplexed experiment. Files are downloaded to the directory specified by dest_dir. 
@@ -400,8 +400,33 @@ class DxSeqResults:
 							 dest_dir - The local directory in which the FASTQs will be downloaded.
 							 overwrite - bool. If True, then if the file to download already exists in dest_dir, the file will be 
 										downloaded again, overwriting it. If False, the file will not be downloaded again from DNAnexus.
-		Returns  : dict. Keys are the barcode names, or if non-barcoded, the read number names. 
 		Raises   : Exception() if barcode is specified and less than or greater than 2 FASTQ files are found.
+		"""
+		fastq_props = self.get_fastq_props(barcode=barcode)
+	
+		for f in fastq_props:
+			props = fastq_props[f]
+			read_num = int(props["read"])
+			barcode = props["barcode"]
+			name = props["fastq_file_name"]
+			filedest = os.path.abspath(os.path.join(dest_dir,name))
+			if os.path.exists(filedest):
+				if overwrite:
+					print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
+					dxpy.download_dxfile(f,filedest)
+			else:
+				print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
+				dxpy.download_dxfile(f,filedest)
+			
+
+	def get_fastq_props(self,barcode=None):
+		"""
+		Function : Returns the DNAnexus file properties for all FASTQ files in the project that match the specified barcode, or all FASTQ
+							 files if not barcode is specified.
+		Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
+		Returns  : dict. Keys are the FASTQ file object IDs on DNAnexus, values are the dict of associated properties on DNAnexus on the file.
+							 In addition to the properties on the file in DNAnexus, an additional property is added here called 'fastq_file_name'.
+		Raises   : Exception if no FASTQ files were found.
 		"""
 		barcode_glob = "*_{barcode}_*".format(barcode=barcode)
 		if barcode:
@@ -414,40 +439,14 @@ class DxSeqResults:
 			if barcode:
 				msg += "and barcode {barcode}.".format(barcode=barcode)
 			raise Exception(msg)
-		if len(fastqs) != 2 and barcode:
-			raise Exception("Expected at most two FASTQ files for a given barcode - one for the foward reads and and another for the reverse reads.")
 
 		dico = {}
 	
 		for f in fastqs:
 			props = dxpy.api.file_describe(object_id=f.id, input_params={"fields": {"properties": True}})["properties"]
-			read_num = int(props["read"])
-			barcode = props["barcode"]
-			name = f.name
-			filedest = os.path.abspath(os.path.join(dest_dir,name))
-#			import pdb
-#			pdb.set_trace()
-			if os.path.exists(filedest):
-				if overwrite:
-					print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
-					dxpy.download_dxfile(f,filedest)
-			else:
-				print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
-				dxpy.download_dxfile(f,filedest)
-
-			if barcode:
-				if barcode not in dico:
-					dico[barcode] = {}
-				if read_num in dico[barcode]:
-					raise Exception("Found mutliple FASTQ files with read number {read_num} for barcode {barcode}, and expected only one.".format(read_num=read_num,barcode=barcode))
-				dico[barcode][read_num] = filedest
-			else:
-				if read_num in dico:
-					raise Exception("Found mutliple FASTQ files with read number {read_num}, and expected only one. If this is a multiplexed run, be sure to specify the barcode.".format(read_num=read_num))
-				dico[read_num] = filedest
+			dico[f.id] = props
+			dico[f.id]["fastq_file_name"] = f.name
 		return dico
-			
-
 		
 				
 
