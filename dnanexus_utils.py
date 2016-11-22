@@ -390,6 +390,7 @@ class DxSeqResults:
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQ
 		os.rename(os.path.join(download_dir,self.DX_FASTQ_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQ"))
+		open("COPY_COMPLETE.txt","w").close()	
 		
 	
 	def download_fastqs(self,dest_dir,barcode=None,overwrite=False):
