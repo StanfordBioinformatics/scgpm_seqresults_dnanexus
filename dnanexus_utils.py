@@ -54,14 +54,14 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 									 set to the value of the 'queue' argument.
 						 share_with_org - Set this argument if you'd like to share the transferred projects with the org so that all users of the 
 							 org will have access to the project. The value you supply should be the access level that members of the org will have.
-	Returns  :
+	Returns  : dict. identifying the projects that were transferred to the specified billing account. Keys are the project IDs, and values are the project names. 
 	"""
 	dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
 	scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
 	org = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_orgprefix(org)
 	pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
 	#pending_transfers is a list of project IDs
-	transferred = []
+	transferred = {}
 	for proj_id in pending_transfers:
 		dx_proj = dxpy.DXProject(proj_id)
 		props = dx_proj.describe(input_params={"properties": True})["properties"]
@@ -73,7 +73,7 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 			continue
 		logger.info("Accepting project transfer of {proj_name} ({proj_id}) for user {user}, to be billed under the org {org}.".format(proj_name=dx_proj.name,proj_id=proj_id,user=dx_username,org=org))
 		dxpy.DXHTTPRequest("/" + proj_id + "/acceptTransfer", {"billTo": org })
-		transferred.append(dx_proj.name)
+		transferred[proj_id=dx_proj.name]
 		if share_with_org:
 			logger.info("Sharing project {proj_id} with {org} with access level {share_with_org}.".format(proj_id=proj_id,org=org,share_with_org=share_with_org))
 			dxpy.api.project_invite(object_id=proj_id,input_params={"invitee": org,"level": share_with_org})
@@ -390,7 +390,7 @@ class DxSeqResults:
 		subprocess.check_call(cmd,shell=True)
 		#rename the downloaded folder to ${download_dir}/FASTQ
 		os.rename(os.path.join(download_dir,self.DX_FASTQ_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQ"))
-		open("COPY_COMPLETE.txt","w").close()	
+		open(os.path.join(download_dir,"COPY_COMPLETE.txt"),"w").close()	
 		
 	
 	def download_fastqs(self,dest_dir,barcode=None,overwrite=False):
