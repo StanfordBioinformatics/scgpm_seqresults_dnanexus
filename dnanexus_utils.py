@@ -73,7 +73,7 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 			continue
 		logger.info("Accepting project transfer of {proj_name} ({proj_id}) for user {user}, to be billed under the org {org}.".format(proj_name=dx_proj.name,proj_id=proj_id,user=dx_username,org=org))
 		dxpy.DXHTTPRequest("/" + proj_id + "/acceptTransfer", {"billTo": org })
-		transferred[proj_id=dx_proj.name]
+		transferred[proj_id] = dx_proj.name
 		if share_with_org:
 			logger.info("Sharing project {proj_id} with {org} with access level {share_with_org}.".format(proj_id=proj_id,org=org,share_with_org=share_with_org))
 			dxpy.api.project_invite(object_id=proj_id,input_params={"invitee": org,"level": share_with_org})
