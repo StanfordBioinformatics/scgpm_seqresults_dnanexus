@@ -187,8 +187,6 @@ class DxSeqResults:
 				dx_proj = dxpy.DXProject(dxid=res["id"])
 		else:
 			#try to find by library_name and potential uhts_run_name
-			import pdb
-			pdb.set_trace()
 			res = list(dxpy.find_projects(properties=dx_project_props,billed_to=self.billing_account_id))
 			if len(res) > 1:
 				projects = [x.id for x in res]
