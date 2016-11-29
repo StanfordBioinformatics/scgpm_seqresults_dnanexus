@@ -189,7 +189,7 @@ class DxSeqResults:
 			#try to find by library_name and potential uhts_run_name
 			res = list(dxpy.find_projects(properties=dx_project_props,billed_to=self.billing_account_id))
 			if len(res) > 1:
-				projects = [x.id for x in res]
+				projects = [x["id"] for x in res]
 				raise DxMultipleProjectsWithSameLibraryName("Error - Multiple DNAnexus projects have the same value for the library_name property value of {library_name}. The projects are {projects}.".format(library_name=self.library_name,projects=projects))
 			if res:
 				dx_proj = dxpy.DXProject(dxid=res[0]["id"])
@@ -416,7 +416,7 @@ class DxSeqResults:
 					print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
 					dxpy.download_dxfile(f,filedest)
 			else:
-				print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
+				print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=name,project=self.dx_project_name,path=filedest))
 				dxpy.download_dxfile(f,filedest)
 			
 
