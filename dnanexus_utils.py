@@ -138,7 +138,7 @@ class DxSeqResults:
 		self.dx_project_id = dx_project_id
 		self.dx_project_name = dx_project_name
 		self.uhts_run_name = uhts_run_name
-		self.sequencing_lane = sequencing_lane
+		self.sequencing_lane = str(sequencing_lane)
 		self.library_name = library_name
 		if not self.dx_project_id and not self.dx_project_name and not self.uhts_run_name and not self.library_name and not self.sequencing_lane:
 			raise Exception("You must specify 'dx_project_id', or some combination of 'dx_project_name', 'uhts_run_name', 'library_name', or 'sequencing_lane.")
@@ -187,6 +187,8 @@ class DxSeqResults:
 				dx_proj = dxpy.DXProject(dxid=res["id"])
 		else:
 			#try to find by library_name and potential uhts_run_name
+			import pdb
+			pdb.set_trace()
 			res = list(dxpy.find_projects(properties=dx_project_props,billed_to=self.billing_account_id))
 			if len(res) > 1:
 				projects = [x.id for x in res]
