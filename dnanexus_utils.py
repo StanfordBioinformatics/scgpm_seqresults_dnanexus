@@ -402,15 +402,20 @@ class DxSeqResults:
 							 overwrite - bool. If True, then if the file to download already exists in dest_dir, the file will be 
 										downloaded again, overwriting it. If False, the file will not be downloaded again from DNAnexus.
 		Raises   : Exception() if barcode is specified and less than or greater than 2 FASTQ files are found.
+		Returns  : dict. The key is the barcode, and the value is a dict with integer keys of 1 for the forward reads file, and 2 for the 
+										reverse reads file. If not paired-end, 
 		"""
 		fastq_props = self.get_fastq_files_props(barcode=barcode)
-	
+		res = {}	
 		for f in fastq_props:
 			props = fastq_props[f]
 			read_num = int(props["read"])
 			barcode = props["barcode"]
+			if barcode not in res:
+				res[barcode] = {}
 			name = props["fastq_file_name"]
 			filedest = os.path.abspath(os.path.join(dest_dir,name))
+			res[barcode][read_num] = filedest
 			if os.path.exists(filedest):
 				if overwrite:
 					print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=f.name,project=self.dx_project_name,path=filedest))
@@ -418,7 +423,7 @@ class DxSeqResults:
 			else:
 				print("Downloading FASTQ file {name} from DNAnexus project {project} to {path}.".format(name=name,project=self.dx_project_name,path=filedest))
 				dxpy.download_dxfile(f,filedest)
-			
+		return res
 
 	def get_fastq_files_props(self,barcode=None):
 		"""
