@@ -25,7 +25,7 @@ import scgpm_lims #submodule
 import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #submodule
 
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:   %(message)s')
 chandler = logging.StreamHandler(sys.stdout)
@@ -37,6 +37,9 @@ class DxProjectMissingQueueProperty(Exception):
 	pass
 
 class DxMultipleProjectsWithSameLibraryName(Exception):
+	pass
+
+class DxProjectNotFound(Exception):
 	pass
 
 def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=None):
