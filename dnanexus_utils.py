@@ -129,7 +129,7 @@ class DxSeqResults:
 		self.dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
 		self.billing_account_id = billing_account_id
 		if self.billing_account_id:
-			scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.validate_billing_to_prefix(billing_account_id=self.billing_account_id,exception=True)
+			scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.validate_billed_to_prefix(billing_account_id=self.billing_account_id,exception=True)
 		if not self.billing_account_id:
 			self.billing_account_id = None
 			#Making sure its set to None in this case, b/c the user could have passed in an empty string.
