@@ -42,6 +42,21 @@ class DxMultipleProjectsWithSameLibraryName(Exception):
 class DxProjectNotFound(Exception):
 	pass
 
+def select_newest_project(dx_project_ids):
+	"""
+	Function : Given a list of DNAnexus project IDs, returns the one that is newest as determined by creation date.
+	Args     : dx_project_ids: list of DNAnexus project IDs.
+	Returns  : str.
+	"""
+	if len(dx_project_ids) == 1:
+		return dx_project_ids[0]
+	
+	projects = [dxpy.DXProject(x) for x in dx_project_ids]
+	created_times = [x.describe()["created"] for x in projects]
+	paired = zip(created_times,projects)
+	paired.sort(reverse=True)
+	return paired[0][0]
+
 def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=None):
 	"""
 	Function :
@@ -100,7 +115,7 @@ class DxSeqResults:
 	DX_FASTQC_FOLDER = "/stage2_qc/fastqc_reports"
 	DX_QC_REPORT_FOLDER = "/stage3_qc_report"
 
-	def __init__(self,dx_username,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None):
+	def __init__(self,dx_username,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
 		"""
 		Description : Logs the specified user into DNAnexus, and then finds the DNAnexus sequencing results project that was uploaded by 
 									SCGPM. The project can be precisely retrieved if the projecd ID is specified (via the dx_project_id argument).
@@ -125,6 +140,7 @@ class DxSeqResults:
 														the 'library_name' property.
 					 billing_account_id - The name of the DNAnexus billing account that the project belongs to. This will only be used to restrict 
 						the search of projects that the user can see to only those billed by the specified account.
+					latest_project - bool. True indicates that if multiple projects are found given the search criteria, the most recently created project will be returned.
 		"""
 		self.dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
 		self.billing_account_id = billing_account_id
@@ -145,7 +161,7 @@ class DxSeqResults:
 		self.library_name = library_name
 		if not self.dx_project_id and not self.dx_project_name and not self.uhts_run_name and not self.library_name and not self.sequencing_lane:
 			raise Exception("You must specify 'dx_project_id', or some combination of 'dx_project_name', 'uhts_run_name', 'library_name', or 'sequencing_lane.")
-		self._set_dxproject_id()
+		self._set_dxproject_id(latest_project=latest_project)
 		#_set_dxproject_id sets the following instance attributes:
 		# self.dx_project_id
 		# self.dx_project_name
@@ -154,7 +170,7 @@ class DxSeqResults:
 			self._set_sequencing_run_name() #sets self.sequencing_run_name.
 			self._set_sequencing_platform() #sets self.sequencing_platform
 
-	def _set_dxproject_id(self):
+	def _set_dxproject_id(self,latest_project=False):
 		"""
 		Function : Searches for the project in DNAnexus based on the input arguments when instantiating the class. If multiple projects are
 							 found based on the search criteria, an exception will be raised. A few various search strategies are employed, based on
@@ -169,6 +185,7 @@ class DxSeqResults:
 
 							 This method will not set the self.dx_project_id if none of the search methods are successful in finding a single project,
 							 and this may indicate that the sequencing hasn't finished yet.
+		Args     : latest_project - bool. True indicates that if multiple projects are found given the search criteria, the most recently created project will be returned.
 
 		Returns  : str. The DNAnexus project ID or the empty string if a project wasn't found.
 		Raises   : scgpm_seqresults_dnanexus.dnanexus_utils.DxMultipleProjectsWithSameLibraryName() if the search is by self.library_name, and multiple DNAnexus projects have that library name.
@@ -191,11 +208,13 @@ class DxSeqResults:
 		else:
 			#try to find by library_name and potential uhts_run_name
 			res = list(dxpy.find_projects(properties=dx_project_props,billed_to=self.billing_account_id))
-			if len(res) > 1:
-				projects = [x["id"] for x in res]
-				raise DxMultipleProjectsWithSameLibraryName("Error - Multiple DNAnexus projects have the same value for the library_name property value of {library_name}. The projects are {projects}.".format(library_name=self.library_name,projects=projects))
-			if res:
+			if len(res) == 1:
 				dx_proj = dxpy.DXProject(dxid=res[0]["id"])
+			elif len(res) > 1:
+				dx_proj_ids = [x["id"] for x in res]
+				if not latest_project:
+					raise DxMultipleProjectsWithSameLibraryName("Error - Multiple DNAnexus projects have the same value for the library_name property value of {library_name}. The projects are {dx_proj_ids}.".format(library_name=self.library_name,dx_proj_ids=dx_proj_ids))
+				dx_proj = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.select_newest_project(dx_project_ids=dx_proj_ids)
 
 		if not dx_proj:
 			return
@@ -396,11 +415,11 @@ class DxSeqResults:
 		open(os.path.join(download_dir,"COPY_COMPLETE.txt"),"w").close()	
 		
 	
-	def download_fastqs(self,dest_dir,barcode=None,overwrite=False):
+	def download_fastqs(self,dest_dir,barcode,overwrite=False):
 		"""
 		Function : Downloads all FASTQ files in the project that match the specified barcode, or if a barcode isn't given, all FASTQ files as in this case it is assumed that this is not
 							 a multiplexed experiment. Files are downloaded to the directory specified by dest_dir. 
-		Args     : barcode - str. The barcode sequence used. If not set, then it is assumed that barcodes were not used (no multiplexing). 
+		Args     : barcode - str. The barcode sequence used. 
 							 dest_dir - The local directory in which the FASTQs will be downloaded.
 							 overwrite - bool. If True, then if the file to download already exists in dest_dir, the file will be 
 										downloaded again, overwriting it. If False, the file will not be downloaded again from DNAnexus.
