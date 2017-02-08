@@ -12,7 +12,6 @@ from argparse import ArgumentParser
 import sys
 
 import scgpm_seqresults_dnanexus.dnanexus_utils
-import encode.dcc_submit as en #module load gbsc/encode/prod
 import gbsc_dnanexus #load the environment module gbsc/gbsc_dnanexus
 DX_LOGIN_CONF = gbsc_dnanexus.CONF_FILE 
 
@@ -35,7 +34,7 @@ logger.addHandler(ch)
 description = "Calls download_fastqs.py in batch, provided an input file specifying the FASTQs to download."
 parser = ArgumentParser(description=description)
 
-parser.add_argument('-i',"--infile",required=True,help="The tab-delimited input file with the following fields: 1) uhts run name, 2) library name, and 3) barcode. Empty lines and lines beginning with a '#' will be skipped.")
+parser.add_argument('-i',"--infile",required=True,help="The tab-delimited input file with the following fields: 1) uhts run name, 2) library name, and 3) barcode. Empty lines and lines beginning with a '#' will be skipped. There isn't a header line.")
 parser.add_argument('-u',"--user-name",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project containing the FASTQs of interest. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-d","--file-download-dir",required=True,help="Local directory in which to download the FASTQ files.")
 parser.add_argument("--not-found-error",action="store_true",help="Presence of this options means to raise an Exception if a project can't be found on DNAnexus with the provided input.")
