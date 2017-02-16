@@ -447,13 +447,11 @@ class DxSeqResults:
 				dxpy.download_dxfile(f,filedest)
 		return res
 
-	def get_fastq_files_props(self,barcode=None):
+	def get_fastq_dxfile_objects(self,barcode=None):
 		"""
-		Function : Returns the DNAnexus file properties for all FASTQ files in the project that match the specified barcode, or all FASTQ
-							 files if not barcode is specified.
+		Function : Retrieves all the FASTQ files in project self.dx_project_name as DXFile objects.
 		Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
-		Returns  : dict. Keys are the FASTQ file object IDs on DNAnexus, values are the dict of associated properties on DNAnexus on the file.
-							 In addition to the properties on the file in DNAnexus, an additional property is added here called 'fastq_file_name'.
+		Returns  : list of DXFile objects representing FASTQ files.
 		Raises   : Exception if no FASTQ files were found.
 		"""
 		barcode_glob = "*_{barcode}_*".format(barcode=barcode)
@@ -467,13 +465,24 @@ class DxSeqResults:
 				msg += "and barcode {barcode}.".format(barcode=barcode)
 			raise Exception(msg)
 		fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
+		return fastqs
 
+	def get_fastq_files_props(self,barcode=None):
+		"""
+		Function : Returns the DNAnexus file properties for all FASTQ files in the project that match the specified barcode, or all FASTQ
+							 files if not barcode is specified.
+		Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
+		Returns  : dict. Keys are the FASTQ file DXFile objects; values are the dict of associated properties on DNAnexus on the file.
+							 In addition to the properties on the file in DNAnexus, an additional property is added here called 'fastq_file_name'.
+		Raises   : Exception if no FASTQ files were found.
+		"""
+		fastqs = self.get_fastq_dxfile_objects(barcode=barcode)	
 		dico = {}
-	
 		for f in fastqs:
-			props = dxpy.api.file_describe(object_id=f.id, input_params={"fields": {"properties": True}})["properties"]
-			dico[f.id] = props
-			dico[f.id]["fastq_file_name"] = f.name
+			#props = dxpy.api.file_describe(object_id=f.id, input_params={"fields": {"properties": True}})["properties"]
+			props = f.get_properties()
+			dico[f] = props
+			dico[f]["fastq_file_name"] = f.name
 		return dico
 		
 				
