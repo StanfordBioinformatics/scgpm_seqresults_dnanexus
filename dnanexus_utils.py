@@ -112,8 +112,8 @@ class DxSeqResults:
 	DX_BCL2FASTQ_FOLDER = "/stage0_bcl2fastq"
 	DX_SAMPLESHEET_FOLDER  = os.path.join(DX_BCL2FASTQ_FOLDER,"miscellany")
 	DX_FASTQ_FOLDER = os.path.join(DX_BCL2FASTQ_FOLDER,"fastqs")
-	DX_FASTQC_FOLDER = "/stage2_qc/fastqc_reports"
-	DX_QC_REPORT_FOLDER = "/stage3_qc_report"
+	DX_FASTQC_FOLDER = "/stage1_qc/fastqc_reports"
+	DX_QC_REPORT_FOLDER = "/stage2_qc_report"
 
 	def __init__(self,dx_username,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
 		"""
