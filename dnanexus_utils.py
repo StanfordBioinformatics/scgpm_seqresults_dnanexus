@@ -375,9 +375,8 @@ class DxSeqResults:
 		"""
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
-		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQC_FOLDER,download_dir=download_dir)
 		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
-		subprocess.check_call(cmd,shell=True)
+		dxpy.download_folder(project=self.dx_project_id,destdir=download_dir,folder=self.DX_FASTQC_FOLDER,overwrite=False)
 		#rename the downloaded folder to ${download_dir}/FASTQC
 		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQC"))
 		return os.path.join(download_dir,"FASTQC")
@@ -408,8 +407,7 @@ class DxSeqResults:
 		self.download_metadata_tar(download_dir=download_dir)
 		#download the FASTQ files into a FASTQ folder
 		logger.info("Downloading the FASTQ files:")
-		cmd = "dx download -r {proj_id}:{folder} -o {download_dir}".format(proj_id=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,download_dir=download_dir)
-		subprocess.check_call(cmd,shell=True)
+		dxpy.download_folder(project=self.dx_project_id,destdir=download_dir,folder=self.DX_FASTQ_FOLDER,overwrite=False)
 		#rename the downloaded folder to ${download_dir}/FASTQ
 		os.rename(os.path.join(download_dir,self.DX_FASTQ_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQ"))
 		open(os.path.join(download_dir,"COPY_COMPLETE.txt"),"w").close()	
