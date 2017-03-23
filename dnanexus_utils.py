@@ -378,8 +378,7 @@ class DxSeqResults:
 		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
 		dxpy.download_folder(project=self.dx_project_id,destdir=download_dir,folder=self.DX_FASTQC_FOLDER,overwrite=True)
 		#rename the downloaded folder to ${download_dir}/FASTQC
-		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQC"))
-		return os.path.join(download_dir,"FASTQC")
+		return download_dir
 
 	def download_project(self,download_dir):
 		"""
@@ -394,7 +393,8 @@ class DxSeqResults:
 		if not os.path.isdir(download_dir):
 			os.mkdir(download_dir)
 		#download the FASTQC files
-		self.download_fastqc_reports(download_dir=download_dir)
+		fastqc_dir = os.path.join(download_dir,"FASTQC")
+		self.download_fastqc_reports(download_dir=fastqc_dir)
 		#download the in-house QC report
 		self.download_qc_report(download_dir=download_dir)
 		#download the SampleSheet used in demultiplexing
@@ -407,9 +407,9 @@ class DxSeqResults:
 		self.download_metadata_tar(download_dir=download_dir)
 		#download the FASTQ files into a FASTQ folder
 		logger.info("Downloading the FASTQ files:")
-		dxpy.download_folder(project=self.dx_project_id,destdir=download_dir,folder=self.DX_FASTQ_FOLDER,overwrite=False)
+		fastq_dir = os.path.join(download_dir,"FASTQ")
+		dxpy.download_folder(project=self.dx_project_id,destdir=fastq_dir,folder=self.DX_FASTQ_FOLDER,overwrite=False)
 		#rename the downloaded folder to ${download_dir}/FASTQ
-		os.rename(os.path.join(download_dir,self.DX_FASTQ_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQ"))
 		open(os.path.join(download_dir,"COPY_COMPLETE.txt"),"w").close()	
 		
 	
