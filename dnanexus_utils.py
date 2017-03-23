@@ -376,7 +376,7 @@ class DxSeqResults:
 		if not os.path.isdir(download_dir):
 			os.makedirs(download_dir)	
 		logger.info("Downloading the FASTQC reports to {download_dir}.".format(download_dir=download_dir))
-		dxpy.download_folder(project=self.dx_project_id,destdir=download_dir,folder=self.DX_FASTQC_FOLDER,overwrite=False)
+		dxpy.download_folder(project=self.dx_project_id,destdir=download_dir,folder=self.DX_FASTQC_FOLDER,overwrite=True)
 		#rename the downloaded folder to ${download_dir}/FASTQC
 		os.rename(os.path.join(download_dir,self.DX_FASTQC_FOLDER.split("/")[-1]),os.path.join(download_dir,"FASTQC"))
 		return os.path.join(download_dir,"FASTQC")
