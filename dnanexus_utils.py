@@ -253,14 +253,11 @@ class DxSeqResults:
 		Function : Retrieves the JSON object for the stats in the file named run_details.json in the project specified by self.dx_project_id.
 		Returns  : JSON object of the run details.
 		"""
-		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name="run_details.json")["id"]
-		output_name = "run_details_{curtime}_json".format(curtime=time.time())
-		dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=output_name)
-		fh = open(output_name,'r')
-		run_details_json = json.load(fh)
-		fh.close()
-		os.remove(output_name)
-		return run_details_json
+		run_details_filename = "run_details.json"
+		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name=run_details_filename)["id"]
+		json_data = json.loads(dxpy.open_dxfile(dxid=run_details_json_id).read())
+		#dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=output_name)
+		return json_data
 	
 	
 	def get_sample_stats_json(self,barcode=None):
@@ -271,14 +268,13 @@ class DxSeqResults:
 		"""
 		sample_stats_json_filename = "sample_stats.json"
 		sample_stats_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=False,project=self.dx_project_id,name=sample_stats_json_filename)["id"]
-		dxpy.download_dxfile(dxid=sample_stats_json_id,project=self.dx_project_id,filename=sample_stats_json_filename)
-		fh = open(sample_stats_json_filename,'r')
-		sample_stats_json = json.load(fh)
+		#dxpy.download_dxfile(dxid=sample_stats_json_id,project=self.dx_project_id,filename=sample_stats_json_filename)
+		json_data = json.loads(dxpy.open_dxfile(sample_stats_json_id))
 	
 		if not barcode:
-			return sample_stats_json
+			return json_data
 	
-		for d in sample_stats_json:
+		for d in json_data:
 			sample_barcode = d["Sample name"]
 			if sample_barcode == barcode:
 				return d
