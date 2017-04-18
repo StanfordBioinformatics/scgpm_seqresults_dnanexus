@@ -10,6 +10,7 @@
 #	1) gbsc/scgpm_seqresults_dnanexus/current
 ###
 
+import time
 import pdb
 import subprocess
 import os
@@ -252,11 +253,13 @@ class DxSeqResults:
 		Function : Retrieves the JSON object for the stats in the file named run_details.json in the project specified by self.dx_project_id.
 		Returns  : JSON object of the run details.
 		"""
-		run_details_json_filename = "run_details.json"
-		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name=run_details_json_filename)["id"]
-		dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=run_details_json_filename)
-		fh = open(run_details_json_filename,'r')
+		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name="run_details.json")["id"]
+		output_name = "run_details_{curtime}_json".format(curtime=time.time())
+		dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=output_name)
+		fh = open(output_name,'r')
 		run_details_json = json.load(fh)
+		fh.close()
+		os.remove(output_name)
 		return run_details_json
 	
 	
