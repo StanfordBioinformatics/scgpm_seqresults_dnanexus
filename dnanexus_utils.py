@@ -255,7 +255,7 @@ class DxSeqResults:
 		"""
 		run_details_filename = "run_details.json"
 		run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name=run_details_filename)["id"]
-		json_data = json.load(dxpy.open_dxfile(dxid=run_details_json_id).read())
+		json_data = json.loads(dxpy.open_dxfile(dxid=run_details_json_id).read())
 		#dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=output_name)
 		return json_data
 	
@@ -269,7 +269,7 @@ class DxSeqResults:
 		sample_stats_json_filename = "sample_stats.json"
 		sample_stats_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=False,project=self.dx_project_id,name=sample_stats_json_filename)["id"]
 		#dxpy.download_dxfile(dxid=sample_stats_json_id,project=self.dx_project_id,filename=sample_stats_json_filename)
-		json_data = json.load(dxpy.open_dxfile(sample_stats_json_id))
+		json_data = json.loads(dxpy.open_dxfile(sample_stats_json_id).read())
 	
 		if not barcode:
 			return json_data
