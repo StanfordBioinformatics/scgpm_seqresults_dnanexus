@@ -95,7 +95,7 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 		transferred[proj_id] = dx_proj.name
 		if share_with_org:
 			logger.info("Sharing project {proj_id} with {org} with access level {share_with_org}.".format(proj_id=proj_id,org=org,share_with_org=share_with_org))
-			dxpy.api.project_invite(object_id=proj_id,input_params={"invitee": org,"level": share_with_org})
+			dxpy.api.project_invite(object_id=proj_id,input_params={"invitee": org,"level": share_with_org,"suppressEmailNotification": True})
 	return transferred
 
 	
@@ -120,7 +120,7 @@ class DxSeqResults:
 		"""
 		Description : Logs the specified user into DNAnexus, and then finds the DNAnexus sequencing results project that was uploaded by 
 									SCGPM. The project can be precisely retrieved if the projecd ID is specified (via the dx_project_id argument).
-									Otherwise, you can uhe dx_project_name argument if you know the name, or use the library_name argument if you know the
+									Otherwise, you can the dx_project_name argument if you know the name, or use the library_name argument if you know the
 								  name of the library that was submitted to the SCGPM sequencing center. All sequencing
 									result projects uploaded to DNAnexus by SCGPM contain a property named 'library_name', and projects will be searched
 									on this property for a matching library name when the library_name argument is specified. If both the library_name
