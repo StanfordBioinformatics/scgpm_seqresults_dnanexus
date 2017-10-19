@@ -29,9 +29,9 @@ There is one line per FASTQ file.
 
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-i","--infile",required=True,help="Tab-delimited input file with columns uhts_run name, lane, and barcode. Empty lines and lines beginning with '#' are ignored. A field-header line starting with '#' is required as the first line.")
-parser.add_argument("--fieldindex-uhts-run-name",required=True,type=int,help="The 0-base index of the uhts run name field in the input file.")
-parser.add_argument("--fieldindex-lane",required=True,type=int,help="The 0-base index of the lane field in the input file.")
-parser.add_argument("--fieldindex-barcode",required=True,type=int,help="The 0-base index of the barcode field in the input file.")
+parser.add_argument("--fieldindex-uhts-run-name",default=0,type=int,help="The 0-base index of the uhts run name field in the input file.")
+parser.add_argument("--fieldindex-lane",default=1,type=int,help="The 0-base index of the lane field in the input file.")
+parser.add_argument("--fieldindex-barcode",default=2,type=int,help="The 0-base index of the barcode field in the input file.")
 parser.add_argument("--fastq-dir",required=True,help="The directory containing DNAnexus sequencing results projects (that were download from DNAnexus).")
 parser.add_argument("-u","--username",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-o","--outfile",required=True)

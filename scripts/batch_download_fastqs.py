@@ -8,7 +8,7 @@
 import os
 import subprocess
 import logging
-from argparse import ArgumentParser
+import argparse
 import sys
 
 import scgpm_seqresults_dnanexus.dnanexus_utils
@@ -32,9 +32,19 @@ logger.addHandler(ch)
 
 
 description = "Calls download_fastqs.py in batch, provided an input file specifying the FASTQs to download."
-parser = ArgumentParser(description=description)
+parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
 
-parser.add_argument('-i',"--infile",required=True,help="The tab-delimited input file with the following fields: 1) uhts run name, 2) sequencing lane, 3) library name, and 3) barcode. Empty lines and lines beginning with a '#' will be skipped. The first line must be a header line.")
+parser.add_argument('-i',"--infile",required=True,help="""Tab-delimited input file in one of two formats. Empty lines and lines beginning with a '#' will be skipped. The first line must be a header line. The first format is used if you don't know the DNAnexus project. Format 1 has the following fields: 
+	1) uhts run name, 
+	2) sequencing lane,
+	3) library name,
+	4) barcode. 
+Format 2 has the following fields:
+	1) dnanexus_project_name,
+	2) barcode
+The script will act on format 1 parsing rules if 4 Fields are detected in the header line, and those of the second format if two fields are detected in the header line. Any other number of fields found in the header line will result in an error.""")
+
+
 parser.add_argument('-u',"--user-name",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project containing the FASTQs of interest. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-d","--file-download-dir",required=True,help="Local directory in which to download the FASTQ files.")
 parser.add_argument("--not-found-error",action="store_true",help="Presence of this options means to raise an Exception if a project can't be found on DNAnexus with the provided input.")
@@ -47,34 +57,65 @@ if not os.path.exists(file_download_dir):
 	os.makedirs(file_download_dir)
 not_found_error = args.not_found_error
 
-inputs = []
 fh = open(infile)
-fh.readline() #read past header
-for line in fh:
-	line = line.strip("\n")
-	if not line:
-		continue
-	if line.startswith("#"):
-		continue
-	input_dict = {}
-	line = line.split("\t")
-	uhts_run_name = line[0].strip()
-	lane = line[1].strip()	
-	library_name = line[2].strip()	
-	barcode = line[3].strip()
-	input_dict["uhts_run_name"] = uhts_run_name
-	input_dict["lane"] = lane
-	input_dict["library_name"] = library_name
-	input_dict["barcode"] = barcode
-	inputs.append(input_dict)
+header = fh.readline().strip().split("\t") #read past header
+length_header = len(header)
 
-for i in inputs:
-	logger.debug("Fetching FASTQs for " + str(i))
-	run_name = i["uhts_run_name"]
-	lib_name = i["library_name"]
-	barcode = i["barcode"]	
-	lane = i["lane"]
-	cmd = "download_fastqs.py --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' --uhts-run-name '{run_name}' -l '{lib_name}' -b '{barcode}' --lane '{lane}' ".format(file_download_dir=file_download_dir,dx_user_name=dx_user_name,run_name=run_name,lib_name=lib_name,barcode=barcode,lane=lane) 
-	subprocess.check_call(cmd,shell=True)
+inputs = [] #list of dicts.
+if length_header not in [2,4]:
+	raise Exception("The header line has a number of fields ({}) that is not supported.".format(length_header))
+
+if length_header == 2: 
+	line_cnt = 0
+	for line in fh:
+		line_cnt += 1
+		line = line.strip("\n")
+		if not line:
+			continue
+		if line.startswith("#"):
+			continue
+		line = line.split("\t")
+		dx_proj_name = line[0].strip()
+		barcode = line[1].strip()
+		if not dx_proj_name:
+			raise Exception("Value for 'dnanexus_project_name' field needed one line {}.".format(line_cnt))
+		if not barcode:
+			raise Exception("Value for 'barcode' field needed one line {}.".format(line_cnt))
+		inputs.append({"dx_proj_name": dx_proj_name, "barcode": barcode})
+
+	for i in inputs:
+		logger.info("Fetching FASTQs for " + str(i))
+		dx_proj_name = i["dx_proj_name"]
+		barcode = i["barcode"]	
+		cmd = "download_fastqs.py --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' -b '{barcode}' --dx-project-name '{dx_proj_name}' ".format(file_download_dir=file_download_dir,dx_user_name=dx_user_name,barcode=barcode,dx_proj_name=dx_proj_name) 
+		subprocess.check_call(cmd,shell=True)
+
+elif length_header == 4:
+	for line in fh:
+		line = line.strip("\n")
+		if not line:
+			continue
+		if line.startswith("#"):
+			continue
+		input_dict = {}
+		line = line.split("\t")
+		uhts_run_name = line[0].strip()
+		lane = line[1].strip()	
+		library_name = line[2].strip()	
+		barcode = line[3].strip()
+		input_dict["uhts_run_name"] = uhts_run_name
+		input_dict["lane"] = lane
+		input_dict["library_name"] = library_name
+		input_dict["barcode"] = barcode
+		inputs.append(input_dict)
+
+	for i in inputs:
+		logger.info("Fetching FASTQs for " + str(i))
+		run_name = i["uhts_run_name"]
+		lib_name = i["library_name"]
+		barcode = i["barcode"]	
+		lane = i["lane"]
+		cmd = "download_fastqs.py --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' --uhts-run-name '{run_name}' -l '{lib_name}' -b '{barcode}' --lane '{lane}' ".format(file_download_dir=file_download_dir,dx_user_name=dx_user_name,run_name=run_name,lib_name=lib_name,barcode=barcode,lane=lane) 
+		subprocess.check_call(cmd,shell=True)
 		
 #fastq_dico: Keys are the file names of the FASTQs and values are the fully qualified paths to the FASTQs.
