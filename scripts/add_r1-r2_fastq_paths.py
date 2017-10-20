@@ -28,11 +28,10 @@ There is one line per FASTQ file.
 """
 
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-i","--infile",required=True,help="Tab-delimited input file with columns uhts_run name, lane, and barcode. Empty lines and lines beginning with '#' are ignored. A field-header line starting with '#' is required as the first line.")
+parser.add_argument("-i","--infile",required=True,help="Tab-delimited input file in one of two formats. In each format, the first line must be a header line starting with a '#'. Empty lines and lines beginning with '#' are ignored. The first format contains only two columns with the 1st containing the DNAnexus project name, and the second the barcode. The second format contains the three columns uhts_run name, lane, and barcode. The columns in this second format can be in any order. A field-header line starting with '#' is required as the first line.")
 parser.add_argument("--fieldindex-uhts-run-name",default=0,type=int,help="The 0-base index of the uhts run name field in the input file.")
 parser.add_argument("--fieldindex-lane",default=1,type=int,help="The 0-base index of the lane field in the input file.")
 parser.add_argument("--fieldindex-barcode",default=2,type=int,help="The 0-base index of the barcode field in the input file.")
-parser.add_argument("--fastq-dir",required=True,help="The directory containing DNAnexus sequencing results projects (that were download from DNAnexus).")
 parser.add_argument("-u","--username",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-o","--outfile",required=True)
 
@@ -42,23 +41,20 @@ run_name_field_index = args.fieldindex_uhts_run_name
 lane_field_index = args.fieldindex_lane
 barcode_field_index = args.fieldindex_barcode
 
-fastq_dir = args.fastq_dir
 dx_username = args.username
 outfile = args.outfile
 fout = open(outfile,'w')
 fh = open(outfile,"w")
 
-if not os.path.exists(fastq_dir):
-	raise Exception("Path provided to --fastq-dir ({path}) does not exist.".format(path=fastq_dir))
-
 fh = open(infile)
-header = fh.readline()
+header = fh.readline().strip()
 if not header.startswith("#"):
 	raise Exception("Missing header field-header line starting with '#' as first line in --infile.")
-
-fastq_dir_contents = os.listdir(fastq_dir)
-if not fastq_dir_contents:
-	raise Exception("There aren't any FASTQ files in --fastq-dir ({fastq_dir}).".format(fastq_dir=fastq_dir))
+header = header.split("\t")
+if len(header) == 2:
+	FMT = 1
+else:
+	FMT = 2
 
 index = 0
 dico = {}
@@ -74,10 +70,15 @@ for i in sorted(dico):
 	if not line or line.startswith("#"):
 		continue	
 	line = line.split("\t")
-	run_name = line[run_name_field_index].strip()
-	lane = line[lane_field_index].strip()
-	barcode = line[barcode_field_index].strip()
-	dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,uhts_run_name=run_name,sequencing_lane=lane)
+	if FMT == 1:	
+		dx_proj_name = line[0]
+		barcode = line[1]
+		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,dx_project_name=dx_proj_name)
+	else:
+		run_name = line[run_name_field_index].strip()
+		lane = line[lane_field_index].strip()
+		barcode = line[barcode_field_index].strip()
+		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,uhts_run_name=run_name,sequencing_lane=lane)
 	if not dxsr.dx_project_id:
 		#no project found.
 		print("Warning: No DNAnexus project found for line {} in input file.".format(index + 1))
@@ -92,10 +93,7 @@ for i in sorted(dico):
 		fastq_props = fastq_files_props[prop]
 		read_num = int(fastq_props["read"])
 		file_name = fastq_props["fastq_file_name"]
-		if file_name in fastq_dir_contents:
-			dico[i]["fastq_files"][read_num] = file_name
-		else:
-			print("Warning: For line {line_num} of input file, the FASTQ file {file_name} in DNAnexus project {dx_project} does not exist in --fastq-dir={fastqdir}.".format(line_num=index + 1,file_name=file_name,dx_project=dxsr.dx_project_id, fastqdir=fastq_dir))
+		dico[i]["fastq_files"][read_num] = file_name
 
 for i in sorted(dico):
 	data = dico[i]
