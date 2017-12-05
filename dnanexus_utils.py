@@ -43,6 +43,10 @@ class DxMultipleProjectsWithSameLibraryName(Exception):
 class DxProjectNotFound(Exception):
 	pass
 
+class FastqNotFound(Exception):
+	#Can be raised whenever we look for specific FASTQ files in a DNAnexus project, but they aren't there. 
+	pass
+
 def select_newest_project(dx_project_ids):
 	"""
 	Function : Given a list of DNAnexus project IDs, returns the one that is newest as determined by creation date.
@@ -263,7 +267,13 @@ class DxSeqResults:
 	def get_sample_stats_json(self,barcode=None):
 		"""
 		Function : Retrieves the JSON object for the stats in the file named sample_stats.json in the project specified by self.dx_project_id.
-							 barcode - str. The barcode for the sample.
+							 This file is located in the DNAnexus folder stage\d_qc_report.
+							 barcode - str. The barcode for the sample. Currently, the sample_stats.json file is of the following form when there isn't
+							 a genome mapping: 
+
+								[{"Sample name": "AGTTCC"}, {"Sample name": "CAGATC"}, {"Sample name": "GCCAAT"}, ...}]. 
+
+							 When there is a mapping, each dictionary has many more keys in addition to the "Sample name" one.
 		Returns  : A list of dicts if barcode=None, otherwise a dict for the given barcode.
 		"""
 		sample_stats_json_filename = "sample_stats.json"
@@ -274,7 +284,7 @@ class DxSeqResults:
 		if not barcode:
 			return json_data
 	
-		for d in json_data:
+		for d in json_data: #d is a dictionary
 			sample_barcode = d["Sample name"]
 			if sample_barcode == barcode:
 				return d
@@ -449,7 +459,7 @@ class DxSeqResults:
 		Function : Retrieves all the FASTQ files in project self.dx_project_name as DXFile objects.
 		Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
 		Returns  : list of DXFile objects representing FASTQ files.
-		Raises   : Exception if no FASTQ files were found.
+		Raises   : dnanexus_utils.FastqNotFound exception if no FASTQ files were found.
 		"""
 		barcode_glob = "*_{barcode}_*".format(barcode=barcode)
 		if barcode:
@@ -460,7 +470,7 @@ class DxSeqResults:
 			msg = "No FASTQ files found for run {run} ".format(run=proj_name)
 			if barcode:
 				msg += "and barcode {barcode}.".format(barcode=barcode)
-			raise Exception(msg)
+			raise FastqNotFound(msg)
 		fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
 		return fastqs
 
@@ -471,9 +481,9 @@ class DxSeqResults:
 		Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
 		Returns  : dict. Keys are the FASTQ file DXFile objects; values are the dict of associated properties on DNAnexus on the file.
 							 In addition to the properties on the file in DNAnexus, an additional property is added here called 'fastq_file_name'.
-		Raises   : Exception if no FASTQ files were found.
+		Raises   : dnanexus_utils.FastqNotFound exception if no FASTQ files were found.
 		"""
-		fastqs = self.get_fastq_dxfile_objects(barcode=barcode)	
+		fastqs = self.get_fastq_dxfile_objects(barcode=barcode)	 #FastqNotFound Exception here if no FASTQs found for specified barcode.
 		dico = {}
 		for f in fastqs:
 			#props = dxpy.api.file_describe(object_id=f.id, input_params={"fields": {"properties": True}})["properties"]

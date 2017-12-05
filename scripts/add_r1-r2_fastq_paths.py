@@ -14,32 +14,42 @@ import gbsc_dnanexus
 
 DX_LOGIN_CONF = gbsc_dnanexus.CONF_FILE
 
-description = """Given a tab-delimited input file with columns
-	1) uhts run name,
-	2) lane, and
-	3) barcode, 
+description = """Retrieves the FASTQ file names for the specified barcodes. The tab-delimited input file may be provided in one of two formats. 
 
-	creates an output file containing the columns
-	1) FASTQ file name,
-	2) UHTS run name,
-	3) lane, and 
-	4) barcode
-There is one line per FASTQ file.
+Format 1:
+	1) DNAnexus project name
+	2) barcode
+
+Format 2
+	1) uhts run name
+	2) lane
+	3) barcode,
+
+The format in use is determined by the number of header fields present in the header line, which must appear as the very first line in the input file and begin with a '#'. 
+
+The output file is identical to the input file, with the exception of two new columns at the start of the file being the FASTQ file name on the DNAnexus platform, and the read number. Thus, the output columns are:
+
+	1) FASTQ file name
+	2) Read number (1 for forward reads, 2 for reverse reads)
+
+followed by the input file columns. Note that at present, one of three warnings may be output to stdout. 
+The possible warnings are triggered whenver 
+
+- A DNAnexus project isn't found based on the provided criteria.
+- A DNAnexus project was found, but there were not any FASTQ files found within having the specified barcodes.
+- A DNAnexus project was found, but only a forward reads or reverse reads FASTQ file was found, not both. 
+
+The last warning thus implies that the script assumes all reads are paired-end, which is true. 
+
 """
 
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-i","--infile",required=True,help="Tab-delimited input file in one of two formats. In each format, the first line must be a header line starting with a '#'. Empty lines and lines beginning with '#' are ignored. The first format contains only two columns with the 1st containing the DNAnexus project name, and the second the barcode. The second format contains the three columns uhts_run name, lane, and barcode. The columns in this second format can be in any order. A field-header line starting with '#' is required as the first line.")
-parser.add_argument("--fieldindex-uhts-run-name",default=0,type=int,help="The 0-base index of the uhts run name field in the input file.")
-parser.add_argument("--fieldindex-lane",default=1,type=int,help="The 0-base index of the lane field in the input file.")
-parser.add_argument("--fieldindex-barcode",default=2,type=int,help="The 0-base index of the barcode field in the input file.")
+parser.add_argument("-i","--infile",required=True,help="Tab-delimited input file in one of two formats. In each format, the first line must be a header line starting with a '#'. Empty lines and lines beginning with '#' are ignored. The first format contains only two columns with the 1st containing the DNAnexus project name, and the second the barcode. The second format contains the three columns uhts_run name, lane, and barcode. The number of columns present in the header line determines the format - two fields for the first format, and three fields for the latter. A field-header line starting with '#' is required as the first line.")
 parser.add_argument("-u","--username",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-o","--outfile",required=True)
 
 args = parser.parse_args()
 infile = args.infile
-run_name_field_index = args.fieldindex_uhts_run_name
-lane_field_index = args.fieldindex_lane
-barcode_field_index = args.fieldindex_barcode
 
 dx_username = args.username
 outfile = args.outfile
@@ -61,36 +71,39 @@ dico = {}
 for line in fh:
 	index += 1
 	line =  line.strip("\n")
+	if not line or line.startswith("#"):
+		continue	
 	dico[index] = {}
 	dico[index]["line"] = line
 	dico[index]["fastq_files"] = {}
 
 for i in sorted(dico):
 	line = dico[i]["line"]
-	if not line or line.startswith("#"):
-		continue	
 	line = line.split("\t")
 	if FMT == 1:	
 		dx_proj_name = line[0]
 		barcode = line[1]
 		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,dx_project_name=dx_proj_name)
 	else:
-		run_name = line[run_name_field_index].strip()
-		lane = line[lane_field_index].strip()
-		barcode = line[barcode_field_index].strip()
+		run_name = line[0].strip()
+		lane = line[1].strip()
+		barcode = line[2].strip()
 		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,uhts_run_name=run_name,sequencing_lane=lane)
 	if not dxsr.dx_project_id:
 		#no project found.
 		print("Warning: No DNAnexus project found for line {} in input file.".format(index + 1))
 		continue
-	fastq_files_props = dxsr.get_fastq_files_props(barcode=barcode)
-	if not fastq_files_props:
+	try:
+		fastq_files_props = dxsr.get_fastq_files_props(barcode=barcode)
+		#This is a dict keyed by DXFile objects, each representing a FASTQ file. Each key's value is
+		# a dictionary of the file's properties on the DNAnexus platform. 
+	except scgpm_seqresults_dnanexus.dnanexus_utils.FastqNotFound:
 		print("Warning: No FASTQ files found for line {} in input file.".format(index + 1))
+		continue
 	if len(fastq_files_props) == 1:
 		print("Warning: There was only one FASTQ file found for line {} in input file. If this is not paired-end sequencing, you can ignore this warning.".format(index + 1))
-	for prop in fastq_files_props: 
-		#i is the DNAnexus object ID of the FASTQ file.
-		fastq_props = fastq_files_props[prop]
+	for dxfile in fastq_files_props: 
+		fastq_props = fastq_files_props[dxfile]
 		read_num = int(fastq_props["read"])
 		file_name = fastq_props["fastq_file_name"]
 		dico[i]["fastq_files"][read_num] = file_name
