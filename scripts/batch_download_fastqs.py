@@ -48,7 +48,7 @@ def log_file_name(ext=False):
 ERRLOG = log_file_name(ext="ERR")
 
 
-description = "Calls download_fastqs.py in batch, provided an input file specifying the FASTQs to download."
+description = "Calls download_fastqs.py in batch, provided an input file specifying the FASTQs to download. This script passes a log file name to download_fastqs.py for error logging, i.e. if a DNAnexus project isn't found then it will be logged. The log file is named after this script and contains the number of seconds since the epoch to help generate a unique name."
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
 
 parser.add_argument('-i',"--infile",required=True,help="""Tab-delimited input file in one of two formats. Empty lines and lines beginning with a '#' will be skipped. The first line must be a header line. The first format is used if you don't know the DNAnexus project. Format 1 has the following fields: 
