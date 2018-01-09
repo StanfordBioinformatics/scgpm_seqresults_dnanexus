@@ -6,6 +6,7 @@
 ###
 
 import os
+import time
 import subprocess
 import logging
 import argparse
@@ -30,6 +31,22 @@ logger.addHandler(ch)
 #file_log_handler.setFormatter(f_formatter)
 #logger.addHandler(file_log_handler)
 
+def log_file_name(ext=False):
+	""" 
+	Function : Creates a logfile name, named after this script and includes the number of seconds since the Epoch. 
+	           An optional extension can be specified to make the logfile name more meaningful regarding its purpose. 
+	Args     : ext - The extension to add to the log file name to indicate its purpose, i.e. ERR for error messages.
+	Returns  : str. 
+	"""
+	script_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+	val = script_name + "_" + str(int(time.time())) + "_LOG"
+	if ext:
+	  val += "_" + ext 
+	val += ".txt"
+	return val 
+
+ERRLOG = log_file_name(ext="ERR")
+
 
 description = "Calls download_fastqs.py in batch, provided an input file specifying the FASTQs to download."
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
@@ -42,9 +59,10 @@ parser.add_argument('-i',"--infile",required=True,help="""Tab-delimited input fi
 Format 2 has the following fields:
 	1) dnanexus_project_name,
 	2) barcode
-The script will act on format 1 parsing rules if 4 Fields are detected in the header line, and those of the second format if two fields are detected in the header line. Any other number of fields found in the header line will result in an error.""")
+The script will act on format 1 parsing rules if 4 Fields are detected in the header line, and those of the second format if two fields are detected in the header line. Any other number of fields found in the header line will result in an error.
 
-
+A note on format 1, you don't have to include values for each field. For unknown values, just leave it blank. These values are stored as properties on a DNAnexus project, and the search for a DNAnexus project will be successful if you supply enough property information to uniquely identify a project.
+""")
 parser.add_argument('-u',"--user-name",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project containing the FASTQs of interest. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-d","--file-download-dir",required=True,help="Local directory in which to download the FASTQ files.")
 parser.add_argument("--not-found-error",action="store_true",help="Presence of this options means to raise an Exception if a project can't be found on DNAnexus with the provided input.")
@@ -87,8 +105,12 @@ if length_header == 2:
 		logger.info("Fetching FASTQs for " + str(i))
 		dx_proj_name = i["dx_proj_name"]
 		barcode = i["barcode"]	
-		cmd = "download_fastqs.py --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' -b '{barcode}' --dx-project-name '{dx_proj_name}' ".format(file_download_dir=file_download_dir,dx_user_name=dx_user_name,barcode=barcode,dx_proj_name=dx_proj_name) 
-		subprocess.check_call(cmd,shell=True)
+		cmd = "download_fastqs.py --errlog '{errlog}'--not-found-error -d '{file_download_dir}' -u '{dx_user_name}' -b '{barcode}' --dx-project-name '{dx_proj_name}' ".format(errlog=ERRLOG, file_download_dir=file_download_dir,dx_user_name=dx_user_name,barcode=barcode,dx_proj_name=dx_proj_name) 
+		popen = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+		stdout, stderr = popen.communicate()
+		retcode = popen.returncode
+		if retcode:
+			print(stderr)
 
 elif length_header == 4:
 	for line in fh:
@@ -115,7 +137,11 @@ elif length_header == 4:
 		lib_name = i["library_name"]
 		barcode = i["barcode"]	
 		lane = i["lane"]
-		cmd = "download_fastqs.py --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' --uhts-run-name '{run_name}' -l '{lib_name}' -b '{barcode}' --lane '{lane}' ".format(file_download_dir=file_download_dir,dx_user_name=dx_user_name,run_name=run_name,lib_name=lib_name,barcode=barcode,lane=lane) 
-		subprocess.check_call(cmd,shell=True)
+		cmd = "download_fastqs.py --errlog '{errlog}' --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' --uhts-run-name '{run_name}' -l '{lib_name}' -b '{barcode}' --lane '{lane}' ".format(errlog=ERRLOG,file_download_dir=file_download_dir,dx_user_name=dx_user_name,run_name=run_name,lib_name=lib_name,barcode=barcode,lane=lane) 
+		popen = subprocess.Popen(cmd,shell=True)
+		stdout, stderr = popen.communicate()
+		retcode = popen.returncode
+		if retcode:
+			print(stderr)
 		
 #fastq_dico: Keys are the file names of the FASTQs and values are the fully qualified paths to the FASTQs.
