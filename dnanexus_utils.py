@@ -23,7 +23,7 @@ import json
 import dxpy #module load dx-toolkit/dx-toolkit
 
 import scgpm_lims #submodule
-import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #submodule
+import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
 
 
 logger = logging.getLogger(__name__)
@@ -43,9 +43,30 @@ class DxMultipleProjectsWithSameLibraryName(Exception):
 class DxProjectNotFound(Exception):
 	pass
 
+class DxApiKeyNotFound(Exception):
+	"""
+	Raised when the environment variable DX_SECURITY_CONTEXT isn't set.
+	"""
+	#Set message to be static (this will always be the error message when this Exception is raised:
+	message = "Environment variable DX_SECURITY_CONTEXT not set. This is needed to store your API key for authenticating at the DNAnexus authentication server; see http://autodoc.dnanexus.com/bindings/python/current/dxpy.html?highlight=token for details."
+
 class FastqNotFound(Exception):
 	#Can be raised whenever we look for specific FASTQ files in a DNAnexus project, but they aren't there. 
 	pass
+
+class DnanexusBarcodeNotFound(Exception):
+	pass
+
+def get_dx_username():
+	"""
+	Uses the API token specified in the DX_SECURITY_CONTEXT environment variable (http://autodoc.dnanexus.com/bindings/python/current/dxpy.html?highlight=token).
+	You can set this variable as follows un Unix platforms: 
+		export DX_SECURITY_CONTEXT="{\"auth_token_type\": \"Bearer\", \"auth_token\": \"your_token\"}"
+	"""
+	env_var = "DX_SECURITY_CONTEXT"
+	if not env_var in os.environ:
+		raise DxApiKeyNotFound
+	return dxpy.whoami()
 
 def select_newest_project(dx_project_ids):
 	"""
@@ -62,13 +83,10 @@ def select_newest_project(dx_project_ids):
 	paired.sort(reverse=True)
 	return paired[0][0]
 
-def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=None):
+def accept_project_transfers(access_level,queue,org,share_with_org=None):
 	"""
 	Function :
-	Args     : dx_username - The DNAnexus login user name that is to receive pending transfers. An API token must have already been
-								generated for this user and that token must have been added to the DNAnexus login configuration file located at 
-								{DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
-						 access_level - Permissions level the new member should have on transferred projects. Should be one of 
+	Args     : access_level - Permissions level the new member should have on transferred projects. Should be one of 
 						     ["VIEW","UPLOAD","CONTRIBUTE","ADMINISTER"]. See 
 							   https://wiki.dnanexus.com/API-Specification-v1.0.0/Project-Permissions-and-Sharing for more details on access levels.
 						 queue - str. The value of the queue property on a DNAnexus project. Only projects that are pending transfer that have
@@ -79,8 +97,8 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 							 org will have access to the project. The value you supply should be the access level that members of the org will have.
 	Returns  : dict. identifying the projects that were transferred to the specified billing account. Keys are the project IDs, and values are the project names. 
 	"""
-	dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
-	scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
+	dx_username = get_dx_username()
+	#scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
 	org = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_orgprefix(org)
 	pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
 	#pending_transfers is a list of project IDs
@@ -104,9 +122,6 @@ def accept_project_transfers(dx_username,access_level,queue,org,share_with_org=N
 
 	
 
-class DnanexusBarcodeNotFound(Exception):
-	pass
-
 class DxSeqResults:
 	UHTS = scgpm_lims.Connection()
 	#SNYDER_ENCODE_ORG = "org-snyder_encode"
@@ -120,9 +135,9 @@ class DxSeqResults:
 	DX_FASTQC_FOLDER = "/stage1_qc/fastqc_reports"
 	DX_QC_REPORT_FOLDER = "/stage2_qc_report"
 
-	def __init__(self,dx_username,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
+	def __init__(self,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
 		"""
-		Description : Logs the specified user into DNAnexus, and then finds the DNAnexus sequencing results project that was uploaded by 
+		Description : Finds the DNAnexus sequencing results project that was uploaded by 
 									SCGPM. The project can be precisely retrieved if the projecd ID is specified (via the dx_project_id argument).
 									Otherwise, you can the dx_project_name argument if you know the name, or use the library_name argument if you know the
 								  name of the library that was submitted to the SCGPM sequencing center. All sequencing
@@ -132,9 +147,8 @@ class DxSeqResults:
 								  billing_account argument can optionally be specifed to restrict all project searches to only those that are
 									billed to that particular billing account (unless dx_project_id is specified in which case the DNAnexus project is
 									directly retrieved).
-	  Args : dx_username - str. The login name of a DNAnexus user.
-		Args : dx_project_id - str. The ID of the DNAnexus project. If specified, no project search will be performed as it will be
-						directly retrieved.
+	  Args : dx_project_id - str. The ID of the DNAnexus project. If specified, no project search will be performed as it will be
+						      directly retrieved.
 					 dx_project_name - The name of a DNAnexus project containing sequencing results that were uploaded by SCGPM. 
 					 uhts_run_name - The name of the sequencing run in UHTS. This is added as a property to all projects in DNAnexus through 
 													 the 'seq_run_name' property.
@@ -147,18 +161,15 @@ class DxSeqResults:
 						the search of projects that the user can see to only those billed by the specified account.
 					latest_project - bool. True indicates that if multiple projects are found given the search criteria, the most recently created project will be returned.
 		"""
-		self.dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_userprefix(dx_username)
+		self.dx_username = get_dx_username()
 		self.billing_account_id = billing_account_id
 		if self.billing_account_id:
 			scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.validate_billed_to_prefix(billing_account_id=self.billing_account_id,exception=True)
 		if not self.billing_account_id:
 			self.billing_account_id = None
-			#Making sure its set to None in this case, b/c the user could have passed in an empty string.
-			# Needs to be None instead b/c dxpy calls that refernce the billing account don't work if this is set to the empty string. None
-			# just means the user doesn't care about which billing account.
+			#Making sure its set to None in this case, b/c the user could have passed in an empty string,
+			# and for this to work is should be set as None from DX's perspective. 
 	
-		#LOG INTO DNANEXUS FIRST
-		scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(self.dx_username)
 		self.dx_project_id = dx_project_id
 		self.dx_project_name = dx_project_name
 		self.uhts_run_name = uhts_run_name
