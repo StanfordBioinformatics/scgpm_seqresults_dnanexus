@@ -18,13 +18,10 @@ import scgpm_seqresults_dnanexus.dnanexus_utils
 #import encode.dcc_submit as en #module load gbsc/encode/prod
 import gbsc_dnanexus #load the environment module gbsc/gbsc_dnanexus
 
-DX_LOGIN_CONF = gbsc_dnanexus.CONF_FILE 
-
 description = ""
 parser = ArgumentParser(description=description)
 
 parser.add_argument("--errlog",required=True,help="Log file name to write errors to (i.e. When a DNAnexus project isn't found). Will be opended in append mode.")
-parser.add_argument('-u',"--user-name",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project containing the FASTQs of interest. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument('-l',"--library-name",help="The library name of the sample that was sequenced. This is name of the library that was submitted to SCGPM for sequencing. This is added as a property to all sequencing result projects through the 'library_name' project property.")
 parser.add_argument("--uhts-run-name",help="The name of the sequencing run in UHTS. This is added as a property to all projects in DNAnexus through the 'seq_run_name' project property. Use this option in combination with --library-name and --lane to further restrict the search space, which is useful especially since multiple DNAnexus projects can have the same library_name property value (i.e. if resequencing the same library).") 
 parser.add_argument("--dx-project-name",help="The name of the sequencing run project in DNAnexus.")
@@ -34,7 +31,6 @@ parser.add_argument("-d","--file-download-dir",required=True,help="Local directo
 parser.add_argument("--not-found-error",action="store_true",help="Presence of this options means to raise an Exception if a project can't be found on DNAnexus with the provided input.")
 
 args = parser.parse_args()
-dx_username = args.user_name
 library_name = args.library_name
 uhts_run_name = args.uhts_run_name
 dx_project_name = args.dx_project_name
@@ -56,7 +52,7 @@ file_log_handler.setLevel(logging.DEBUG)
 file_log_handler.setFormatter(f_formatter)
 logger.addHandler(file_log_handler)
 
-dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,library_name=library_name,uhts_run_name=uhts_run_name,dx_project_name=dx_project_name,sequencing_lane=lane)
+dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(library_name=library_name,uhts_run_name=uhts_run_name,dx_project_name=dx_project_name,sequencing_lane=lane)
 if dxsr.dx_project_id:
 	for b in barcodes:
 		dxsr.download_fastqs(barcode=b,dest_dir=file_download_dir)
@@ -67,7 +63,7 @@ else:
 	UHTS Run Name:       : {uhts}
 	DNAnexus Project Name: {p}
 	Sequencing Lane      : {lane}
-					 \n""".format(user=dx_username,lib=library_name,uhts=uhts_run_name,p=dx_project_name,lane=lane)
+					 \n""".format(user=scgpm_seqresults_dnanexus.dnanexus_utils.get_dx_username(strip_prefix=True),lib=library_name,uhts=uhts_run_name,p=dx_project_name,lane=lane)
 	logger.critical(log_msg)
 						
 	if not_found_error:

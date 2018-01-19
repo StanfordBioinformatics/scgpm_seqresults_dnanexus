@@ -10,11 +10,10 @@ import os
 import sys
 
 import scgpm_seqresults_dnanexus.dnanexus_utils
+import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
 import gbsc_dnanexus
 
-DX_LOGIN_CONF = gbsc_dnanexus.CONF_FILE
-
-description = """Retrieves the FASTQ file names for the specified barcodes. The tab-delimited input file may be provided in one of two formats. 
+description = """Retrieves the FASTQ file names in DNAnexus for the specified sequenced libraries. The tab-delimited input file may be provided in one of two formats. 
 
 Format 1:
 	1) DNAnexus project name
@@ -45,13 +44,11 @@ The last warning thus implies that the script assumes all reads are paired-end, 
 
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-i","--infile",required=True,help="Tab-delimited input file in one of two formats. In each format, the first line must be a header line starting with a '#'. Empty lines and lines beginning with '#' are ignored. The first format contains only two columns with the 1st containing the DNAnexus project name, and the second the barcode. The second format contains the three columns uhts_run name, lane, and barcode. The number of columns present in the header line determines the format - two fields for the first format, and three fields for the latter. A field-header line starting with '#' is required as the first line.")
-parser.add_argument("-u","--username",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-o","--outfile",required=True)
 
 args = parser.parse_args()
 infile = args.infile
 
-dx_username = args.username
 outfile = args.outfile
 fout = open(outfile,'w')
 fh = open(outfile,"w")
@@ -83,12 +80,12 @@ for i in sorted(dico):
 	if FMT == 1:	
 		dx_proj_name = line[0]
 		barcode = line[1]
-		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,dx_project_name=dx_proj_name)
+		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_project_name=dx_proj_name)
 	else:
 		run_name = line[0].strip()
 		lane = line[1].strip()
 		barcode = line[2].strip()
-		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(dx_username=dx_username,uhts_run_name=run_name,sequencing_lane=lane)
+		dxsr = scgpm_seqresults_dnanexus.dnanexus_utils.DxSeqResults(uhts_run_name=run_name,sequencing_lane=lane)
 	if not dxsr.dx_project_id:
 		#no project found.
 		print("Warning: No DNAnexus project found for line {} in input file.".format(index + 1))

@@ -14,7 +14,6 @@ import sys
 
 import scgpm_seqresults_dnanexus.dnanexus_utils
 import gbsc_dnanexus #load the environment module gbsc/gbsc_dnanexus
-DX_LOGIN_CONF = gbsc_dnanexus.CONF_FILE 
 
 f_formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:   %(message)s')
 #create logger
@@ -63,13 +62,11 @@ The script will act on format 1 parsing rules if 4 Fields are detected in the he
 
 A note on format 1, you don't have to include values for each field. For unknown values, just leave it blank. These values are stored as properties on a DNAnexus project, and the search for a DNAnexus project will be successful if you supply enough property information to uniquely identify a project.
 """)
-parser.add_argument('-u',"--user-name",required=True,help="The login name of the DNAnexus user, who has at least VIEW access to the DNAnexus project containing the FASTQs of interest. An API token must have already been generated for this user and that token must have been added to the DNAnexus login configuration file located at {DX_LOGIN_CONF}.".format(DX_LOGIN_CONF=DX_LOGIN_CONF))
 parser.add_argument("-d","--file-download-dir",required=True,help="Local directory in which to download the FASTQ files.")
 parser.add_argument("--not-found-error",action="store_true",help="Presence of this options means to raise an Exception if a project can't be found on DNAnexus with the provided input.")
 
 args = parser.parse_args()
 infile = args.infile
-dx_user_name = args.user_name
 file_download_dir = args.file_download_dir
 if not os.path.exists(file_download_dir):
 	os.makedirs(file_download_dir)
@@ -105,7 +102,7 @@ if length_header == 2:
 		logger.info("Fetching FASTQs for " + str(i))
 		dx_proj_name = i["dx_proj_name"]
 		barcode = i["barcode"]	
-		cmd = "download_fastqs.py --errlog '{errlog}'--not-found-error -d '{file_download_dir}' -u '{dx_user_name}' -b '{barcode}' --dx-project-name '{dx_proj_name}' ".format(errlog=ERRLOG, file_download_dir=file_download_dir,dx_user_name=dx_user_name,barcode=barcode,dx_proj_name=dx_proj_name) 
+		cmd = "download_fastqs.py --errlog '{errlog}'--not-found-error -d '{file_download_dir}' -b '{barcode}' --dx-project-name '{dx_proj_name}' ".format(errlog=ERRLOG, file_download_dir=file_download_dir,barcode=barcode,dx_proj_name=dx_proj_name) 
 		popen = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 		stdout, stderr = popen.communicate()
 		retcode = popen.returncode
@@ -137,7 +134,7 @@ elif length_header == 4:
 		lib_name = i["library_name"]
 		barcode = i["barcode"]	
 		lane = i["lane"]
-		cmd = "download_fastqs.py --errlog '{errlog}' --not-found-error -d '{file_download_dir}' -u '{dx_user_name}' --uhts-run-name '{run_name}' -l '{lib_name}' -b '{barcode}' --lane '{lane}' ".format(errlog=ERRLOG,file_download_dir=file_download_dir,dx_user_name=dx_user_name,run_name=run_name,lib_name=lib_name,barcode=barcode,lane=lane) 
+		cmd = "download_fastqs.py --errlog '{errlog}' --not-found-error -d '{file_download_dir}' --uhts-run-name '{run_name}' -l '{lib_name}' -b '{barcode}' --lane '{lane}' ".format(errlog=ERRLOG,file_download_dir=file_download_dir,run_name=run_name,lib_name=lib_name,barcode=barcode,lane=lane) 
 		popen = subprocess.Popen(cmd,shell=True)
 		stdout, stderr = popen.communicate()
 		retcode = popen.returncode

@@ -15,9 +15,12 @@ RAW_DATA_FOLDER = "/raw_data" #The raw_data folder location in a SCGPM DNAnexus 
 APP_NAME = "scgpm_clean_raw_data" #App's name on DNAnexus
 APP = dxpy.DXApp(name="scgpm_clean_raw_data")
 
-description = """This script calls the DNAnexus app I built called SCGPM Clean Raw Data at https://platform.dnanexus.com/app/scgpm_clean_raw_dataRemoves to unwanted files (that drive up the storage costs) from the raw_data folder of a DNAnexus project containing sequencing results from the SCGPM sequencing workflow. Most of the files in the raw_data folder are removed. Moreover, the lane tarball is removed; the XML files RunInfo.xml and runParameters.xml are extracted from *Interop.tar and then the tarball is removed; finally, *metadata.tar is removed. The extracted XML files are uploaded back to the raw_data folder. 
+description = """
+This script calls the DNAnexus app I built called SCGPM Clean Raw Data at https://platform.dnanexus.com/app/scgpm_clean_raw_dataRemoves to unwanted files (that drive up the storage costs) from the raw_data folder of a DNAnexus project containing sequencing results from the SCGPM sequencing workflow. Most of the files in the raw_data folder are removed. Moreover, the lane tarball is removed; the XML files RunInfo.xml and runParameters.xml are extracted from *Interop.tar and then the tarball is removed; finally, *metadata.tar is removed. The extracted XML files are uploaded back to the raw_data folder. 
 
 Queryies DNAnexus for all projects billed to the specified org and that were created within the last -d days.
+
+You must have the environemnt variable DX_SECURITY_CONTEXT set (described at http://autodoc.dnanexus.com/bindings/python/current/dxpy.html?highlight=token) in order to authenticate with DNAnexus.
 """
 
 parser = argparse.ArgumentParser(description=description,formatter_class=argparse.RawTextHelpFormatter)
