@@ -57,22 +57,6 @@ class FastqNotFound(Exception):
 class DnanexusBarcodeNotFound(Exception):
 	pass
 
-def get_dx_username(strip_prefix=False):
-	"""
-	Uses the API token specified in the DX_SECURITY_CONTEXT environment variable (http://autodoc.dnanexus.com/bindings/python/current/dxpy.html?highlight=token).
-	You can set this variable as follows un Unix platforms: 
-		export DX_SECURITY_CONTEXT="{\"auth_token_type\": \"Bearer\", \"auth_token\": \"your_token\"}"
-
-	Args: strip_prefix: bool. True means to strip out the DNAnexus prefix added to all user names, being 'user-'. 
-	"""
-	env_var = "DX_SECURITY_CONTEXT"
-	if not env_var in os.environ:
-		raise DxApiKeyNotFound
-	user = dxpy.whoami()
-	if strip_prefix:
-		return user.split("-")[-1]
-	return user
-
 def select_newest_project(dx_project_ids):
 	"""
 	Function : Given a list of DNAnexus project IDs, returns the one that is newest as determined by creation date.
@@ -102,7 +86,7 @@ def accept_project_transfers(access_level,queue,org,share_with_org=None):
 							 org will have access to the project. The value you supply should be the access level that members of the org will have.
 	Returns  : dict. identifying the projects that were transferred to the specified billing account. Keys are the project IDs, and values are the project names. 
 	"""
-	dx_username = get_dx_username()
+	dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.get_dx_username()
 	#scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
 	org = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_orgprefix(org)
 	pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
