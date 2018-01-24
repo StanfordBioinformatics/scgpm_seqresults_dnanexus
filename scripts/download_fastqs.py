@@ -16,7 +16,7 @@ import sys
 
 import scgpm_seqresults_dnanexus.dnanexus_utils
 #import encode.dcc_submit as en #module load gbsc/encode/prod
-import gbsc_dnanexus #load the environment module gbsc/gbsc_dnanexus
+import gbsc_dnanexus.utils #load the environment module gbsc/gbsc_dnanexus
 
 description = ""
 parser = ArgumentParser(description=description)
@@ -68,6 +68,6 @@ else:
 						
 	if not_found_error:
 		msg = "Could not find DNAnexus project."
-		raise scgpm_seqresults_dnanexus.dnanexus_utils.DxProjectNotFound(msg)
+		raise gbsc_dnanexus.utils.DxProjectNotFound(msg)
 		
 #fastq_dico: Keys are the file names of the FASTQs and values are the fully qualified paths to the FASTQs.

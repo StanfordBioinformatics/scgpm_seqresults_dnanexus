@@ -40,17 +40,8 @@ class DxProjectMissingQueueProperty(Exception):
 class DxMultipleProjectsWithSameLibraryName(Exception):
 	pass
 
-class DxProjectNotFound(Exception):
-	pass
-
-class DxApiKeyNotFound(Exception):
-	"""
-	Raised when the environment variable DX_SECURITY_CONTEXT isn't set.
-	"""
-	#Set message to be static (this will always be the error message when this Exception is raised:
-	message = "Environment variable DX_SECURITY_CONTEXT not set. This is needed to store your API key for authenticating at the DNAnexus authentication server; see http://autodoc.dnanexus.com/bindings/python/current/dxpy.html?highlight=token for details."
-
 class FastqNotFound(Exception):
+
 	#Can be raised whenever we look for specific FASTQ files in a DNAnexus project, but they aren't there. 
 	pass
 
