@@ -9,6 +9,7 @@
 """Utilities for working with the SCGPM Sequencing Center application logic on DNAnexus.
 """
 
+import sys
 import logging
 
 import scgpm_seqresults_dnanexus.log as sd_log
@@ -22,7 +23,7 @@ LOG_DIR = "Logs_scgpm_seqresults_dnanexus"
 debug_logger = logging.getLogger(__name__)
 level = logging.DEBUG
 debug_logger.setLevel(level)
-sd_log.add_file_handler(logger=debug_logger,level=level,tag=["debug"])
+sd_log.add_file_handler(logger=debug_logger,level=level,tags=["debug"])
 sd_log.add_file_handler(logger=debug_logger,level=logging.ERROR,tags=["error"])
 f_formatter = logging.Formatter('%(asctime)s:%(name)s:\t%(message)s')
 ch = logging.StreamHandler(stream=sys.stdout)

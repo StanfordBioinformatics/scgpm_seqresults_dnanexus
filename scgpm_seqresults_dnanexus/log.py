@@ -6,6 +6,7 @@
 # nathankw@stanford.edu                                                                                 
 ### 
 
+import os
 import logging
 
 import scgpm_seqresults_dnanexus as sd
@@ -23,9 +24,9 @@ def get_logfile_name(tags):
     os.mkdir(sd.LOG_DIR)
   filename = "log_"
   for tag in tags:
-    filename.append("_{}".format(tag))
+    filename += "_{}".format(tag)
   filename += ".txt"
-  filename = os.path.join(LOG_DIR,filename)
+  filename = os.path.join(sd.LOG_DIR,filename)
   return filename
 
 def add_file_handler(logger,level,tags):

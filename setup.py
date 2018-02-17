@@ -5,6 +5,11 @@
 # http://python-packaging.readthedocs.io/en/latest/dependencies.html.
 
 from distutils.core import setup
+import glob
+
+scripts = glob.glob("scgpm_seqresults_dnanexus/scripts/*.py")
+#Remove __init__.py
+[scripts.remove(x) for x in scripts if x.endswith("__init__.py")] 
 
 setup(
   name = "scgpm_seqresults_dnanexus",
@@ -13,10 +18,6 @@ setup(
   author = "Nathaniel Watson",
   author_email = "nathankw@stanford.edu",
   url = "https://github.com/StanfordBioinformatics/scgpm_seqresults_dnanexus.git",
-  packages = [
-    "https://github.com/StanfordBioinformatics/gbsc_dnanexus.git",
-    "https://github.com/StanfordBioinformatics/scgpm_lims.git"
-  ],
-  install_requires = [],
-  scripts = ["scgpm_seqresults_dnanexus/scripts/*.py"],
+  packages = ["scgpm_seqresults_dnanexus"],
+  scripts = scripts
 )
