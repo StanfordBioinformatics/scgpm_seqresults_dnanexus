@@ -5,7 +5,10 @@
 # http://python-packaging.readthedocs.io/en/latest/dependencies.html.
 
 from distutils.core import setup
+from setuptools import find_packages 
+from pip.req import parse_requirements
 import glob
+import uuid
 
 scripts = glob.glob("scgpm_seqresults_dnanexus/scripts/*.py")
 #Remove __init__.py
@@ -18,6 +21,6 @@ setup(
   author = "Nathaniel Watson",
   author_email = "nathankw@stanford.edu",
   url = "https://github.com/StanfordBioinformatics/scgpm_seqresults_dnanexus.git",
-  packages = ["scgpm_seqresults_dnanexus"],
+  packages = find_packages(),
   scripts = scripts
 )

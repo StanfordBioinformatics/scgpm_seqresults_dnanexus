@@ -42,7 +42,7 @@ import os
 import sys
 
 import scgpm_seqresults_dnanexus.dnanexus_utils
-import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
+import gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
 import gbsc_dnanexus
 
 def get_parser():

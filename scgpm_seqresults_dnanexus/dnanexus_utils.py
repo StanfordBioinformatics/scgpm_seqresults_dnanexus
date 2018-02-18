@@ -24,11 +24,11 @@ import dxpy #module load dx-toolkit/dx-toolkit
 import scgpm_lims #submodule
 import scgpm_seqresults_dnanexus as sd
 import scgpm_seqresults_dnanexus.log as sd_log
-import scgpm_seqresults_dnanexus.gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
+import gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
 
 success_logger = logging.getLogger("success")
 success_logger.setLevel(logging.INFO)
-sd_log.add_file_handler(logger=success_logger,level=logging.INFO,tag="success")
+sd_log.add_file_handler(logger=success_logger,level=logging.INFO,tags="success")
 
 debug_logger = logging.getLogger(__name__)
 
@@ -79,9 +79,9 @@ def accept_project_transfers(access_level,queue,org,share_with_org=None):
                org will have access to the project. The value you supply should be the access level that members of the org will have.
   Returns  : dict. identifying the projects that were transferred to the specified billing account. Keys are the project IDs, and values are the project names. 
   """
-  dx_username = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.get_dx_username()
-  #scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
-  org = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.add_dx_orgprefix(org)
+  dx_username = gbsc_dnanexus.utils.get_dx_username()
+  #gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
+  org = gbsc_dnanexus.utils.add_dx_orgprefix(org)
   pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
   #pending_transfers is a list of project IDs
   transferred = {}
@@ -148,7 +148,7 @@ class DxSeqResults:
     self.dx_username = get_dx_username()
     self.billing_account_id = billing_account_id
     if self.billing_account_id:
-      scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.validate_billed_to_prefix(billing_account_id=self.billing_account_id,exception=True)
+      gbsc_dnanexus.utils.validate_billed_to_prefix(billing_account_id=self.billing_account_id,exception=True)
     if not self.billing_account_id:
       self.billing_account_id = None
       #Making sure its set to None in this case, b/c the user could have passed in an empty string,
@@ -214,7 +214,7 @@ class DxSeqResults:
         dx_proj_ids = [x["id"] for x in res]
         if not latest_project:
           raise DxMultipleProjectsWithSameLibraryName("Error - Multiple DNAnexus projects have the same value for the library_name property value of {library_name}. The projects are {dx_proj_ids}.".format(library_name=self.library_name,dx_proj_ids=dx_proj_ids))
-        dx_proj = scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.select_newest_project(dx_project_ids=dx_proj_ids)
+        dx_proj = gbsc_dnanexus.utils.select_newest_project(dx_project_ids=dx_proj_ids)
 
     if not dx_proj:
       return
