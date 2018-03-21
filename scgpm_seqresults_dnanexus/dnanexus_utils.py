@@ -21,7 +21,6 @@ import json
 
 import dxpy #module load dx-toolkit/dx-toolkit
 
-import scgpm_lims #submodule
 import scgpm_seqresults_dnanexus as sd
 import scgpm_seqresults_dnanexus.log as sd_log
 import gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
@@ -109,7 +108,7 @@ def accept_project_transfers(access_level,queue,org,share_with_org=None):
   
 
 class DxSeqResults:
-  UHTS = scgpm_lims.Connection()
+  #UHTS = scgpm_lims.Connection()
   #SNYDER_ENCODE_ORG = "org-snyder_encode"
   #LOG_LEVELS = [x for x in logging._levelNames if isinstance(x,str)]
   DX_RAW_DATA_FOLDER = "/raw_data"
