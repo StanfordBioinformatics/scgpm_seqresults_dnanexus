@@ -141,7 +141,6 @@ class DxSeqResults:
 						the search of projects that the user can see to only those billed by the specified account.
 					latest_project - bool. True indicates that if multiple projects are found given the search criteria, the most recently created project will be returned.
 		"""
-		self.dx_username = get_dx_username()
 		self.billing_account_id = billing_account_id
 		if self.billing_account_id:
 			scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.validate_billed_to_prefix(billing_account_id=self.billing_account_id,exception=True)

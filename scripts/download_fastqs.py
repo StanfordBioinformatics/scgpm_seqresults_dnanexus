@@ -63,7 +63,7 @@ else:
 	UHTS Run Name:       : {uhts}
 	DNAnexus Project Name: {p}
 	Sequencing Lane      : {lane}
-					 \n""".format(user=scgpm_seqresults_dnanexus.dnanexus_utils.get_dx_username(strip_prefix=True),lib=library_name,uhts=uhts_run_name,p=dx_project_name,lane=lane)
+					 \n""".format(user=scgpm_seqresults_dnanexus.gbsc_dnanexus.utils.get_dx_username(strip_prefix=True),lib=library_name,uhts=uhts_run_name,p=dx_project_name,lane=lane)
 	logger.critical(log_msg)
 						
 	if not_found_error:
