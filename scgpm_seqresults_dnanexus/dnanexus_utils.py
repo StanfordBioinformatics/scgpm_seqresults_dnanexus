@@ -144,7 +144,7 @@ class DxSeqResults:
             the search of projects that the user can see to only those billed by the specified account.
           latest_project - bool. True indicates that if multiple projects are found given the search criteria, the most recently created project will be returned.
     """
-    self.dx_username = get_dx_username()
+    self.dx_username = gbsc_dnanexus.utils.get_dx_username()
     self.billing_account_id = billing_account_id
     if self.billing_account_id:
       gbsc_dnanexus.utils.validate_billed_to_prefix(billing_account_id=self.billing_account_id,exception=True)
@@ -167,7 +167,7 @@ class DxSeqResults:
     # self.library_name
     if self.dx_project_id:
       self._set_sequencing_run_name() #sets self.sequencing_run_name.
-      self._set_sequencing_platform() #sets self.sequencing_platform
+      #self._set_sequencing_platform() #sets self.sequencing_platform
 
   def _set_dxproject_id(self,latest_project=False):
     """
