@@ -154,6 +154,7 @@ class DxSeqResults:
       # and for this to work is should be set as None from DX's perspective. 
   
     self.dx_project_id = dx_project_id
+    self.dx_project = None
     self.dx_project_name = dx_project_name
     self.uhts_run_name = uhts_run_name
     self.sequencing_lane = sequencing_lane
@@ -218,6 +219,7 @@ class DxSeqResults:
     if not dx_proj:
       return
 
+    self.dx_project = dx_proj
     self.dx_project_id = dx_proj.id
     self.dx_project_name = dx_proj.name
     self.library_name = dxpy.api.project_describe(object_id=dx_proj.id,input_params={"fields": {"properties": True}})["properties"]["library_name"]

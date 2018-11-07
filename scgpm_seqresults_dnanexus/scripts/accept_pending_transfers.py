@@ -58,7 +58,7 @@ def main():
   
   dx_user = dxpy.whoami().split("-")[1]
   
-  script_dir,script_name = os.path.dirname(__file__),os.path.basename(__file__)
+  script_dir, script_name = os.path.dirname(__file__), os.path.basename(__file__)
   logfile = os.path.join(script_dir,"log_" + dx_user + "_" + os.path.splitext(script_name)[1] + ".txt")
   
   #accept pending transfers

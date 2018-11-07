@@ -51,6 +51,16 @@ def main():
   for i in dx_projects:
     proj_id = i["id"]
     proj = dxpy.DXProject(proj_id)
+    # Use a quick filter to check if this project has been cleaned already:
+    try:
+      folder_list = proj.list_folder("/raw_data")
+    except dxpy.exceptions.ResourceNotFound:
+      continue 
+    raw_files = folder_list["objects"]
+    if len(raw_files) < 3:
+      #Then this project should already have been cleaned, otherwise there'd be at least three files.
+      #When cleaned, the only files present should be the RunInfo.xml and runParameters.xml. 
+      continue
     APP.run(app_input={},project=proj_id,folder=RAW_DATA_FOLDER)
     print(proj.name + " (" + proj_id + ")")
 
