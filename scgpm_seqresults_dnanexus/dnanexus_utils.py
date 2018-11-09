@@ -222,7 +222,8 @@ class DxSeqResults:
     self.dx_project = dx_proj
     self.dx_project_id = dx_proj.id
     self.dx_project_name = dx_proj.name
-    self.library_name = dxpy.api.project_describe(object_id=dx_proj.id,input_params={"fields": {"properties": True}})["properties"]["library_name"]
+    self.dx_project_props = dxpy.api.project_describe(object_id=dx_proj.id,input_params={"fields": {"properties": True}})["properties"]
+    self.library_name = self.dx_project_props["library_name"]
 
   def _set_sequencing_run_name(self):
     """
