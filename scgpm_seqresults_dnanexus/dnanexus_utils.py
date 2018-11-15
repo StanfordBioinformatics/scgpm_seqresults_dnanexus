@@ -229,7 +229,7 @@ class DxSeqResults:
     """
     Function : Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
     """
-    self.sequencing_run_name = dxpy.api.project_describe(object_id=self.dx_project_id,input_params={"fields": {"properties": True}})["properties"]["seq_run_name"]
+    self.sequencing_run_name = self.dx_project_props["seq_run_name"]
 
   def _set_sequencing_platform(self):
     """
