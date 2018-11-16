@@ -17,13 +17,11 @@ Scripts
    scripts/add_r1-r2_fastq_paths.rst
    scripts/add_standard_props_to_projects.rst
    scripts/batch_download_fastqs.rst
-   cripts/download_fastqs.rst
+   scripts/download_fastqs.rst
    scripts/download_multiple_projects.rst
    scripts/download_project.rst
    scripts/list_projects.rst
-   cripts/scgpm_clean_raw_data.rst
-   scripts/submit_to_dcc.rst
-   scripts/wrapper_download_project.rst
+   scripts/scgpm_clean_raw_data.rst
 
 Client API Modules
 ------------------

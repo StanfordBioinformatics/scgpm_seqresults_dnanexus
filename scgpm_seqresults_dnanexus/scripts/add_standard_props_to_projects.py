@@ -19,8 +19,6 @@ import dxpy
 
 import scgpm_lims
 
-uhts_conn = scgpm_lims.Connection()
-
 lane_reg = re.compile("_L(\d)_")
 
 def get_parser():
@@ -32,6 +30,7 @@ def get_parser():
 
 def main():
   parser = get_parser()
+  uhts_conn = scgpm_lims.Connection()
   args = parser.parse_args()
   billing_account = args.billing_account
   if not billing_account.startswith("org-"):

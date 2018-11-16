@@ -5,6 +5,8 @@
 import sys
 # sys.path.insert(0, os.path.abspath('.'))
 sys.path.append("../")
+sys.path.append("../gbsc_dnanexus")
+sys.path.append("../scgpm_lims")
 
 #http://www.sphinx-doc.org/en/stable/ext/autodoc.html#directive-autoclass
 #autoclass_content="both"

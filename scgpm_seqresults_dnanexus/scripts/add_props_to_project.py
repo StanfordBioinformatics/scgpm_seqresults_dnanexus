@@ -23,7 +23,7 @@ def get_parser():
   group.add_argument("--infile",help="""
     File of DNAnexus project IDs, one per line. Empty lines and lines starting with '#' will be skipped.""")
 
-  parser.add_argument("props",nargs='+',help="One or more key=value positional arguments, each 
+  parser.add_argument("props",nargs='+',help="""One or more key=value positional arguments, each 
     representing a property key and value pair.""")
   return parser
 

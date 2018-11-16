@@ -9,7 +9,7 @@
 ###
 
 """
-This script calls the DNAnexus app I built called SCGPM Clean Raw Data at https://platform.dnanexus.com/app/scgpm_clean_raw_dataRemoves to unwanted files (that drive up the storage costs) from the raw_data folder of a DNAnexus project containing sequencing results from the SCGPM sequencing workflow. Most of the files in the raw_data folder are removed. Moreover, the lane tarball is removed; the XML files RunInfo.xml and runParameters.xml are extracted from *Interop.tar and then the tarball is removed; finally, *metadata.tar is removed. The extracted XML files are uploaded back to the raw_data folder.
+This script calls the DNAnexus app I built called SCGPM Clean Raw Data at https://platform.dnanexus.com/app/scgpm_clean_raw_dataRemoves to unwanted files (that drive up the storage costs) from the raw_data folder of a DNAnexus project containing sequencing results from the SCGPM sequencing workflow. Most of the files in the raw_data folder are removed. Moreover, the lane tarball is removed; the XML files RunInfo.xml and runParameters.xml are extracted from Interop.tar and then the tarball is removed; finally, metadata.tar is removed. The extracted XML files are uploaded back to the raw_data folder.
 
 Queryies DNAnexus for all projects billed to the specified org and that were created within the last -d days.
 

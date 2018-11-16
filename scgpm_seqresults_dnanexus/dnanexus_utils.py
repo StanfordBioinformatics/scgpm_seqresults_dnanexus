@@ -51,9 +51,13 @@ class DnanexusBarcodeNotFound(Exception):
 
 def select_newest_project(dx_project_ids):
   """
-  Function : Given a list of DNAnexus project IDs, returns the one that is newest as determined by creation date.
-  Args     : dx_project_ids: list of DNAnexus project IDs.
-  Returns  : str.
+  Given a list of DNAnexus project IDs, returns the one that is newest as determined by creation date.
+
+  Args: 
+      dx_project_ids: `list` of DNAnexus project IDs.
+
+  Returns:
+      `str`.
   """
   if len(dx_project_ids) == 1:
     return dx_project_ids[0]
@@ -66,17 +70,21 @@ def select_newest_project(dx_project_ids):
 
 def accept_project_transfers(access_level,queue,org,share_with_org=None):
   """
-  Function :
-  Args     : access_level - Permissions level the new member should have on transferred projects. Should be one of 
-                 ["VIEW","UPLOAD","CONTRIBUTE","ADMINISTER"]. See 
-                 https://wiki.dnanexus.com/API-Specification-v1.0.0/Project-Permissions-and-Sharing for more details on access levels.
-             queue - str. The value of the queue property on a DNAnexus project. Only projects that are pending transfer that have
-                     this value for the queue property will be transferred to the specified org.
-             org - The name of the DNAnexus org under which to accept the project transfers for projects that have their queue property
-                   set to the value of the 'queue' argument.
-             share_with_org - Set this argument if you'd like to share the transferred projects with the org so that all users of the 
-               org will have access to the project. The value you supply should be the access level that members of the org will have.
-  Returns  : dict. identifying the projects that were transferred to the specified billing account. Keys are the project IDs, and values are the project names. 
+  Args:
+      access_level: `str`. Permissions level the new member should have on transferred projects. Should 
+          be one of ["VIEW","UPLOAD","CONTRIBUTE","ADMINISTER"]. See 
+          https://wiki.dnanexus.com/API-Specification-v1.0.0/Project-Permissions-and-Sharing for more details on access levels.
+      queue: `str`. The value of the queue property on a DNAnexus project. Only projects that are 
+          pending transfer that have this value for the queue property will be transferred to the 
+          specified org.
+      org: `str`. The name of the DNAnexus org under which to accept the project transfers for projects 
+          that have their queue property set to the value of the 'queue' argument.
+      share_with_org: `str`. Set this argument if you'd like to share the transferred projects 
+          with the org so that all users of the org will have access to the project. The value you 
+          supply should be the access level that members of the org will have.
+  Returns:
+      `dict`: The projects that were transferred to the specified billing account. Keys are the 
+      project IDs, and values are the project names. 
   """
   dx_username = gbsc_dnanexus.utils.get_dx_username()
   #gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
@@ -120,7 +128,7 @@ class DxSeqResults:
 
   def __init__(self,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
     """
-    Description : Finds the DNAnexus sequencing results project that was uploaded by 
+    Finds the DNAnexus sequencing results project that was uploaded by 
                   SCGPM. The project can be precisely retrieved if the projecd ID is specified (via the dx_project_id argument).
                   Otherwise, you can the dx_project_name argument if you know the name, or use the library_name argument if you know the
                   name of the library that was submitted to the SCGPM sequencing center. All sequencing
@@ -171,23 +179,30 @@ class DxSeqResults:
 
   def _set_dxproject_id(self,latest_project=False):
     """
-    Function : Searches for the project in DNAnexus based on the input arguments when instantiating the class. If multiple projects are
-               found based on the search criteria, an exception will be raised. A few various search strategies are employed, based on
-               the input arguments. In all cases, if the 'billing_account_id' was specifed, all searches will search for projects only 
-               belonging to the specified billing account. The search strategies work as follows:
-               If the project ID was
-               provided, the search will attempt to find the project by ID only. If the project ID wasn't provided, but the project 
-               name was specified, then the search will attempt to find the project by name and by any project properties that may have 
-               been set during instantiation (uhts_run_name, sequencing_lane, and library_name).
-               If neither the project name nor the project ID was specified, then a search by whichever project properties were specified
-               will take place.
+    Searches for the project in DNAnexus based on the input arguments when instantiating the class. 
+    If multiple projects are found based on the search criteria, an exception will be raised. A 
+    few various search strategies are employed, based on the input arguments. In all cases, if the 
+    'billing_account_id' was specifed, all searches will search for projects only belonging to the 
+    specified billing account. The search strategies work as follows: If the project ID was
+    provided, the search will attempt to find the project by ID only. If the project ID wasn't 
+    provided, but the project name was specified, then the search will attempt to find the project
+    by name and by any project properties that may have been set during instantiation 
+    (uhts_run_name, sequencing_lane, and library_name). If neither the project name nor the 
+    project ID was specified, then a search by whichever project properties were specified will take place.
 
-               This method will not set the self.dx_project_id if none of the search methods are successful in finding a single project,
-               and this may indicate that the sequencing hasn't finished yet.
-    Args     : latest_project - bool. True indicates that if multiple projects are found given the search criteria, the most recently created project will be returned.
+    This method will not set the self.dx_project_id if none of the search methods are successful 
+    in finding a single project, and this may indicate that the sequencing hasn't finished yet.
 
-    Returns  : str. The DNAnexus project ID or the empty string if a project wasn't found.
-    Raises   : scgpm_seqresults_dnanexus.dnanexus_utils.DxMultipleProjectsWithSameLibraryName() if the search is by self.library_name, and multiple DNAnexus projects have that library name.
+    Args:
+        latest_project: `bool`. True indicates that if multiple projects are found given the search 
+        criteria, the most recently created project will be returned.
+
+    Returns: 
+        `str`. The DNAnexus project ID or the empty string if a project wasn't found.
+ 
+    Raises: 
+        `scgpm_seqresults_dnanexus.dnanexus_utils.DxMultipleProjectsWithSameLibraryName()`: The 
+            search is by self.library_name, and multiple DNAnexus projects have that library name.
     """
     dx_project_props = {}
     if self.library_name:
@@ -226,14 +241,17 @@ class DxSeqResults:
 
   def _set_sequencing_run_name(self):
     """
-    Function : Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
+    Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
     """
     self.sequencing_run_name = self.dx_project_props["seq_run_name"]
 
   def get_run_details_json(self):
     """
-    Function : Retrieves the JSON object for the stats in the file named run_details.json in the project specified by self.dx_project_id.
-    Returns  : JSON object of the run details.
+    Retrieves the JSON object for the stats in the file named run_details.json in the project 
+    specified by self.dx_project_id.
+
+    Returns: 
+        JSON object of the run details.
     """
     run_details_filename = "run_details.json"
     run_details_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=True,project=self.dx_project_id,name=run_details_filename)["id"]
@@ -244,15 +262,19 @@ class DxSeqResults:
   
   def get_sample_stats_json(self,barcode=None):
     """
-    Function : Retrieves the JSON object for the stats in the file named sample_stats.json in the project specified by self.dx_project_id.
-               This file is located in the DNAnexus folder stage\d_qc_report.
-               barcode - str. The barcode for the sample. Currently, the sample_stats.json file is of the following form when there isn't
-               a genome mapping: 
+    Retrieves the JSON object for the stats in the file named sample_stats.json in the project 
+    specified by self.dx_project_id.  This file is located in the DNAnexus folder stage\d_qc_report.
 
-                [{"Sample name": "AGTTCC"}, {"Sample name": "CAGATC"}, {"Sample name": "GCCAAT"}, ...}]. 
+    Args:
+        barcode: `str`. The barcode for the sample. Currently, the sample_stats.json file is of the 
+            following form when there isn't a genome mapping: 
 
-               When there is a mapping, each dictionary has many more keys in addition to the "Sample name" one.
-    Returns  : A list of dicts if barcode=None, otherwise a dict for the given barcode.
+            [{"Sample name": "AGTTCC"}, {"Sample name": "CAGATC"}, {"Sample name": "GCCAAT"}, ...}]. 
+
+            When there is a mapping, each dictionary has many more keys in addition to the "Sample name" one.
+
+    Returns: 
+        `list` of dicts if barcode=None, otherwise a dict for the given barcode.
     """
     sample_stats_json_filename = "sample_stats.json"
     sample_stats_json_id = dxpy.find_one_data_object(more_ok=False,zero_ok=False,project=self.dx_project_id,name=sample_stats_json_filename)["id"]
@@ -271,9 +293,12 @@ class DxSeqResults:
 
   def download_metadata_tar(self,download_dir):  
     """
-    Function : Downloads the ${run_name}.metadata.tar file from the DNAnexus sequencing results project.
-    Args     : download_dir - The local directory path to download the QC report to.
-    Returns  : str. The filepath to the downloaded metadata tarball.
+    Downloads the ${run_name}.metadata.tar file from the DNAnexus sequencing results project.
+
+    Args: 
+        download_dir: `str` - The local directory path to download the QC report to.
+    Returns:
+        `str`: The filepath to the downloaded metadata tarball.
     """
     if not os.path.isdir(download_dir):
       os.makedirs(download_dir)  
@@ -290,9 +315,13 @@ class DxSeqResults:
 
   def download_run_details_json(self,download_dir):
     """
-    Function : Downloads the run_details.json and the barcodes.json from the DNAnexus sequencing results project.
-    Args     : download_dir - The local directory path to download the QC report to.
-    Returns  : str. The filepath to the downloaded run_details.json file.
+    Downloads the run_details.json and the barcodes.json from the DNAnexus sequencing results project.
+
+    Args: 
+        download_dir: `str` - The local directory path to download the QC report to.
+
+    Returns:
+        `str`. The filepath to the downloaded run_details.json file.
     """
     if not os.path.isdir(download_dir):
       os.makedirs(download_dir)  
@@ -309,9 +338,13 @@ class DxSeqResults:
 
   def download_barcodes_json(self,download_dir):
     """
-    Function : Downloads the run_details.json and the barcodes.json from the DNAnexus sequencing results project.
-    Args     : download_dir - The local directory path to download the QC report to.
-    Returns  : str. The filepath to the downloaded barcodes.json file.
+    Downloads the run_details.json and the barcodes.json from the DNAnexus sequencing results project.
+
+    Args:
+        download_dir: `str` - The local directory path to download the QC report to.
+
+    Returns:
+        `str`. The filepath to the downloaded barcodes.json file.
     """
     if not os.path.isdir(download_dir):
       os.makedirs(download_dir)  
@@ -328,9 +361,13 @@ class DxSeqResults:
 
   def download_samplesheet(self,download_dir):
     """
-    Function : Downloads the SampleSheet used in demultiplexing from the DNAnexus sequencing results project.
-    Args     : download_dir - The local directory path to download the QC report to.
-    Returns  : str. The filepath to the downloaded QC report.
+    Downloads the SampleSheet used in demultiplexing from the DNAnexus sequencing results project.
+
+    Args:
+        download_dir: `str` - The local directory path to download the QC report to.
+
+    Returns:
+        `str`. The filepath to the downloaded QC report.
     """
     if not os.path.isdir(download_dir):
       os.makedirs(download_dir)  
@@ -347,9 +384,13 @@ class DxSeqResults:
 
   def download_qc_report(self,download_dir):
     """
-    Function : Downloads the QC report from the DNAnexus sequencing results project.
-    Args     : download_dir - The local directory path to download the QC report to.
-    Returns  : str. The filepath to the downloaded QC report.
+    Downloads the QC report from the DNAnexus sequencing results project.
+ 
+    Args: 
+        download_dir: `str` - The local directory path to download the QC report to.
+
+    Returns:
+        `str`. The filepath to the downloaded QC report.
     """
     if not os.path.isdir(download_dir):
       os.makedirs(download_dir)  
@@ -366,9 +407,13 @@ class DxSeqResults:
 
   def download_fastqc_reports(self,download_dir):
     """
-    Function : Downloads the QC report from the DNAnexus sequencing results project.
-    Args     : download_dir - The local directory path to download the QC report to.
-    Returns  : str. The filepath to the downloaded FASTQC reports folder.
+    Downloads the QC report from the DNAnexus sequencing results project.
+
+    Args: 
+        download_dir: `str` - The local directory path to download the QC report to.
+
+    Returns: 
+        `str`. The filepath to the downloaded FASTQC reports folder.
     """
     if not os.path.isdir(download_dir):
       os.makedirs(download_dir)  
@@ -381,9 +426,6 @@ class DxSeqResults:
 
   def download_project(self,download_dir):
     """
-    Function :
-    Args     :
-    Returns  :
     """
     msg = "Downloading DNAnexus project {proj_name} ({proj_id}).".format(proj_name=self.dx_project_name,proj_id=self.dx_project_id)
     log_success_and_debug(msg)
@@ -415,15 +457,23 @@ class DxSeqResults:
   
   def download_fastqs(self,dest_dir,barcode,overwrite=False):
     """
-    Function : Downloads all FASTQ files in the project that match the specified barcode, or if a barcode isn't given, all FASTQ files as in this case it is assumed that this is not
-               a multiplexed experiment. Files are downloaded to the directory specified by dest_dir. 
-    Args     : barcode - str. The barcode sequence used. 
-               dest_dir - The local directory in which the FASTQs will be downloaded.
-               overwrite - bool. If True, then if the file to download already exists in dest_dir, the file will be 
-                    downloaded again, overwriting it. If False, the file will not be downloaded again from DNAnexus.
-    Raises   : Exception() if barcode is specified and less than or greater than 2 FASTQ files are found.
-    Returns  : dict. The key is the barcode, and the value is a dict with integer keys of 1 for the forward reads file, and 2 for the 
-                    reverse reads file. If not paired-end, 
+    Downloads all FASTQ files in the project that match the specified barcode, or if a barcode 
+    isn't given, all FASTQ files as in this case it is assumed that this is not a multiplexed 
+    experiment. Files are downloaded to the directory specified by dest_dir. 
+
+    Args:
+        barcode: `str`. The barcode sequence used. 
+        dest_dir: `str`. The local directory in which the FASTQs will be downloaded.
+        overwrite: `bool`. If True, then if the file to download already exists in dest_dir, the 
+            file will be downloaded again, overwriting it. If False, the file will not be 
+            downloaded again from DNAnexus.
+
+    Returns: 
+         `dict`: The key is the barcode, and the value is a dict with integer keys of 1 for the 
+          forward reads file, and 2 for the reverse reads file. If not paired-end, 
+
+    Raises:
+        `Exception`: The barcode is specified and less than or greater than 2 FASTQ files are found.
     """
     fastq_props = self.get_fastq_files_props(barcode=barcode)
     res = {}  
@@ -444,10 +494,16 @@ class DxSeqResults:
 
   def get_fastq_dxfile_objects(self,barcode=None):
     """
-    Function : Retrieves all the FASTQ files in project self.dx_project_name as DXFile objects.
-    Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
-    Returns  : list of DXFile objects representing FASTQ files.
-    Raises   : dnanexus_utils.FastqNotFound exception if no FASTQ files were found.
+    Retrieves all the FASTQ files in project self.dx_project_name as DXFile objects.
+
+    Args:
+        barcode: `str`. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
+
+    Returns: 
+        `list` of DXFile objects representing FASTQ files.
+
+    Raises:
+        `dnanexus_utils.FastqNotFound`: No FASTQ files were found.
     """
     barcode_glob = "*_{barcode}_*".format(barcode=barcode)
     if barcode:
@@ -464,12 +520,19 @@ class DxSeqResults:
 
   def get_fastq_files_props(self,barcode=None):
     """
-    Function : Returns the DNAnexus file properties for all FASTQ files in the project that match the specified barcode, or all FASTQ
-               files if not barcode is specified.
-    Args     : barcode - str. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
-    Returns  : dict. Keys are the FASTQ file DXFile objects; values are the dict of associated properties on DNAnexus on the file.
-               In addition to the properties on the file in DNAnexus, an additional property is added here called 'fastq_file_name'.
-    Raises   : dnanexus_utils.FastqNotFound exception if no FASTQ files were found.
+    Returns the DNAnexus file properties for all FASTQ files in the project that match the 
+    specified barcode, or all FASTQ files if not barcode is specified.
+
+    Args:
+        barcode: `str`. If set, then only FASTQ file properties for FASTQ files having the specified barcode are returned.
+
+    Returns:
+        `dict`. Keys are the FASTQ file DXFile objects; values are the dict of associated properties 
+        on DNAnexus on the file. In addition to the properties on the file in DNAnexus, an 
+        additional property is added here called 'fastq_file_name'.
+
+    Raises:
+        dnanexus_utils.FastqNotFound exception if no FASTQ files were found.
     """
     fastqs = self.get_fastq_dxfile_objects(barcode=barcode)   #FastqNotFound Exception here if no FASTQs found for specified barcode.
     dico = {}
