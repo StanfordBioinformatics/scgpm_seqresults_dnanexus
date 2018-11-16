@@ -10,13 +10,13 @@
 #  1) gbsc/scgpm_seqresults_dnanexus/current
 ###
 
-import time
+import json
+import logging
+import os
 import pdb
 import subprocess
-import os
 import sys
-import logging
-import json
+import time
 
 
 import dxpy #module load dx-toolkit/dx-toolkit
