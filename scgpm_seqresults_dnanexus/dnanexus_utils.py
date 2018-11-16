@@ -168,7 +168,6 @@ class DxSeqResults:
     # self.library_name
     if self.dx_project_id:
       self._set_sequencing_run_name() #sets self.sequencing_run_name.
-      #self._set_sequencing_platform() #sets self.sequencing_platform
 
   def _set_dxproject_id(self,latest_project=False):
     """
@@ -230,24 +229,6 @@ class DxSeqResults:
     Function : Sets the self.sequencing_run_name attribute to the name of the sequencing run in UHTS.
     """
     self.sequencing_run_name = self.dx_project_props["seq_run_name"]
-
-  def _set_sequencing_platform(self):
-    """
-    Function : Sets the self.sequencing_platform attribute to the sequencing platform name.
-               Currently, only knows about the HiSeq2000 and HiSeq4000 platforms.
-    Raises   : Exception if the platform is not recognized.
-    """
-    ri = self.UHTS.getruninfo(self.sequencing_run_name)["run_info"]
-    platform = ri["platform"]
-    if platform == "miseq":
-      platform = "MiSeq"
-    elif platform == "hiseq4000":
-      platform == "HiSeq4000"
-    elif platform == "hiseq2000":
-      platform == "HiSeq2000"
-    else:
-      raise Exception("Unknown platform {platform} for sequencing run {run}".format(platform=platform,run=self.sequencing_run_name))
-    self.sequencing_platform = platform
 
   def get_run_details_json(self):
     """
