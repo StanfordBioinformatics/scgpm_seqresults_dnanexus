@@ -1,4 +1,5 @@
 build/                                                                                                 
+scgpm_seqresults_dnanexus.egg-info
 dist/                                                                                                  
 scgpm-seqresults-dnanexus.egg-info/ 
 docs/_build                                                                                            

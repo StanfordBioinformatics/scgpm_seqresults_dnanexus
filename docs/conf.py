@@ -9,7 +9,7 @@ sys.path.append("../gbsc_dnanexus")
 sys.path.append("../scgpm_lims")
 
 #http://www.sphinx-doc.org/en/stable/ext/autodoc.html#directive-autoclass
-#autoclass_content="both"
+autoclass_content="both"
 
 #http://www.sphinx-doc.org/en/stable/ext/autodoc.html
 autodoc_member_order="bysource"
