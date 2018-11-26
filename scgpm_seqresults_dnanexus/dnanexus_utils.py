@@ -91,7 +91,7 @@ def accept_project_transfers(access_level,queue,org,share_with_org=None):
       dx_username = gbsc_dnanexus.utils.get_dx_username()
       #gbsc_dnanexus.utils.log_into_dnanexus(dx_username)
       org = gbsc_dnanexus.utils.add_dx_orgprefix(org)
-      pending_transfers = dxpy.api.user_describe(object_id=dx_username,input_params={"pendingTransfers": True})["pendingTransfers"]
+      pending_transfers = gbsc_dnanexus.utils.pending_transfers(dx_username)
       #pending_transfers is a list of project IDs
       transferred = {}
       for proj_id in pending_transfers:
