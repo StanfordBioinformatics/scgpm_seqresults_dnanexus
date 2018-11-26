@@ -31,7 +31,7 @@ setup(
   ],
   description = "Utilities for working with the SCGPM Sequencing Center application logic on DNAnexus.",
   install_requires = [
-      "dxpy",
+      "dxpy3",
   ],
   long_description = long_description,
   long_description_content_type = "text/markdown",

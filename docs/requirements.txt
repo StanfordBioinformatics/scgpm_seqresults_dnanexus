@@ -1,2 +1,2 @@
-dxpy
+dxpy3
 sphinx-argparse

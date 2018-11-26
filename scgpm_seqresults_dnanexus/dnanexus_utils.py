@@ -276,7 +276,7 @@ class DxSeqResults:
         #dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=output_name)
         return json_data
 
-    def get_alignment_summary_metrics(barcode):
+    def get_alignment_summary_metrics(self, barcode):
         """
         Parses the metrics in a ${barcode}alignment_summary_metrics file in the DNAnexus project
         (usually in the qc folder). This contains metrics produced by Picard Tools's 

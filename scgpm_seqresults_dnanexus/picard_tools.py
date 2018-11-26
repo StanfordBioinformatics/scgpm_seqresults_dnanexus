@@ -15,7 +15,7 @@ class CollectAlignmentSummaryMetrics:
     def _parse(self):
         # Read past the comment lines
         while True:
-            line = fh.readline().rstrip("\n")
+            line = self.fh.readline().rstrip("\n")
             if not line:
                 continue
             if line.startswith("#"):
@@ -27,7 +27,7 @@ class CollectAlignmentSummaryMetrics:
         #The next 3 lines are FIRST_OF_PAIR stats, SECOND_OF_PAIR stats, and PAIR stats.
         self.metrics = {}
         for i in range(3):
-            self._parseMetricsLine(fh.readline())
+            self._parseMetricsLine(self.fh.readline())
 
     def _parseMetricsLine(self,line):
         line = line.rstrip("\n").split("\t")
