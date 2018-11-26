@@ -46,5 +46,5 @@ setup(
   },
   scripts = scripts,
   url = "https://github.com/StanfordBioinformatics/scgpm_seqresults_dnanexus.git",
-  version = "0.1.0",
+  version = "0.2.0",
 )

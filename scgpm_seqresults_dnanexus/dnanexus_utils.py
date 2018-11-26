@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import pdb
+from io import StringIO
 import subprocess
 import sys
 import time
@@ -21,6 +22,7 @@ import time
 
 import dxpy #module load dx-toolkit/dx-toolkit
 
+import scgpm_seqresults_dnanexus.picard_tools as picard
 import scgpm_seqresults_dnanexus as sd
 import scgpm_seqresults_dnanexus.log as sd_log
 import gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python module that can be used to log into DNAnexus.
@@ -142,8 +144,8 @@ class DxSeqResults:
     def __init__(self,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
         """
         Args: 
-            dx_project_id - `str`. The ID of the DNAnexus project. If specified, no project search will be performed as it will be
-                directly retrieved.
+            dx_project_id - `str`. The ID of the DNAnexus project (i.e. FPg8yJQ900P4ZgzxFZbgJZY2). If specified, no project search 
+                will be performed as it will be directly retrieved.
             dx_project_name - `str`. Name of a DNAnexus project containing sequencing results that were 
                 uploaded by GSSC.
             uhts_run_name - `str`. Name of the sequencing run in UHTS. This is added as a property to 
@@ -159,6 +161,7 @@ class DxSeqResults:
             latest_project - `bool`. True indicates that if multiple projects are found given the search
                 criteria, the most recently created project will be returned.
         """
+        self.dx_project_id = dx_project_id
         self.dx_username = gbsc_dnanexus.utils.get_dx_username()
         self.billing_account_id = billing_account_id
         if self.billing_account_id:
@@ -169,7 +172,6 @@ class DxSeqResults:
             #Making sure its set to None in this case, b/c the user could have passed in an empty string,
             # and for this to work is should be set as None from DX's perspective. 
       
-        self.dx_project_id = dx_project_id
         self.dx_project = None
         self.dx_project_name = dx_project_name
         self.uhts_run_name = uhts_run_name
@@ -184,6 +186,10 @@ class DxSeqResults:
         # self.library_name
         if self.dx_project_id:
             self._set_sequencing_run_name() #sets self.sequencing_run_name.
+
+    def _process_dx_project_id(self, dx_project_id):
+            if not dx_project_id.startswith("project-"):
+                self.dx_project_id = prefix + dx_project_id
   
     def _set_dxproject_id(self,latest_project=False):
         """
@@ -222,6 +228,9 @@ class DxSeqResults:
     
         dx_proj = ""
         if self.dx_project_id:
+            prefix = "project-"
+            if not self.dx_project_id.startswith(prefix):
+                self.dx_project_id = prefix + self.dx_project_id
             dx_proj = dxpy.DXProject(dxid=self.dx_project_id)
         elif self.dx_project_name:
             res = dxpy.find_one_project(properties=dx_project_props,billed_to=self.billing_account_id,zero_ok=True,more_ok=False,name=self.dx_project_name)
@@ -266,10 +275,49 @@ class DxSeqResults:
         json_data = json.loads(dxpy.open_dxfile(dxid=run_details_json_id).read())
         #dxpy.download_dxfile(show_progress=True,dxid=run_details_json_id,project=self.dx_project_id,filename=output_name)
         return json_data
+
+    def get_alignment_summary_metrics(barcode):
+        """
+        Parses the metrics in a ${barcode}alignment_summary_metrics file in the DNAnexus project
+        (usually in the qc folder). This contains metrics produced by Picard Tools's 
+        CollectAlignmentSummaryMetrics program. 
+        """
+        filename = barcode + ".alignment_summary_metrics"
+        # In the call to dxpy.find_one_data_object() below, I'd normally set the 
+        # more_ok parameter to False, but this blows-up in Python 3.7 - giving me a RuntimeError. 
+        # So, I just won't set it for now. I think dxpy is still mainly a Python 2.7 library and
+        # can break in later version of Python3. 
+        file_id = dxpy.find_one_data_object(
+            zero_ok=False,
+            project=self.dx_project_id,
+            name=filename)["id"]
+        fh = StringIO(dxpy.open_dxfile(file_id).read())
+        asm = picard.CollectAlignmentSummaryMetrics(fh)
+        return asm.metrics
     
-    
+    def get_barcode_stats(self, barcode):
+        """
+        Loads the JSON in a ${barcode}_stats.json file in the DNAnexus project (usually in the qc
+        folder). 
+        """
+        filename = barcode + "_stats.json"
+        # In the call to dxpy.find_one_data_object() below, I'd normally set the 
+        # more_ok parameter to False, but this blows-up in Python 3.7 - giving me a RuntimeError. 
+        # So, I just won't set it for now. I think dxpy is still mainly a Python 2.7 library and
+        # can break in later version of Python3. 
+        file_id = dxpy.find_one_data_object(
+            zero_ok=False,
+            project=self.dx_project_id,
+            name=filename)["id"]
+        json_data = json.loads(dxpy.open_dxfile(file_id).read())
+        return json_data
+ 
     def get_sample_stats_json(self,barcode=None):
         """
+        .. deprecated:: 0.1.0
+           GSSC has removed the sample_stats.json file since the entire folder it was in has been 
+           removed. Use :meth:`get_barcode_stats` instead. 
+     
         Retrieves the JSON object for the stats in the file named sample_stats.json in the project 
         specified by self.dx_project_id.  This file is located in the DNAnexus folder stage\d_qc_report.
     
