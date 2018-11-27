@@ -4,7 +4,7 @@
 
 API documentation is on [Read the Docs](https://scgpm-seqresults-dnanexus.readthedocs.io/en/latest/index.html).
 
-Provides high level methods and scripts for working with sequencing results that are stored in DNAnexus projects. This repository is geared towards sequencing result projects that the Stanford Genome Sequencing Center creates in DNAnexus, since there are many project properties that are unique to their workflow.  
+Provides high level methods and scripts for working with sequencing results that are stored in DNAnexus projects. This repository is geared towards sequencing result projects that the Stanford Genome Sequencing Center creates in DNAnexus, since there are many project properties that are unique to their workflow that are utilized/queried.  
 
 The heart of this API rests in the **`DxSeqResults()`** class in the **`dnanexus_utils.py`** module. Given a DNAnexus project of interest, a user can use high level methods around that project to do things such as:
 
