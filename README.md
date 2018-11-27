@@ -11,16 +11,15 @@ The heart of this API rests in the **`DxSeqResults()`** class in the **`dnanexus
 * Download QC reports and JSON stats for one or more barcoded samples,
 * Download FASTQ files or fetch them as DNAnexus DXFile objects,
 * Retrieve the properties that are set on specific FASTQ files,
-* and more
-
-There is also a functionality to programatically accept project transfers in DNAnexus. 
+* accept project transfers in DNAnexus,
+* and more.
 
 The **scripts** are many, and include tools such as:
 
-* Cleaning up projects to save space
+* Cleaning up projects to save space,
 * Listing projects and their properties for projects billed to a specific org,
 * Downloading fastqs of interest,
-* Adding properties to a project
+* Adding properties to a project,
 * accepting project transfers
 
 The first point above has been heavily used to save space and costs. The script is called ``scgpm_clean_raw_data.py`` and works by unneccessary extras in the raw_data folder of a project.  It works by running an app on DNAnexus by the same name and cleans out all projects that have been created within the last N days. 
