@@ -1,12 +1,21 @@
+# -*- coding: utf-8 -*-                                                                                
+                                                                                                       
+###                                                                                                    
+# © 2018 The Board of Trustees of the Leland Stanford Junior University                                
+# Nathaniel Watson                                                                                     
+# nathankw@stanford.edu                                                                                
+###
 
-# For some usefule documentation, see
+# For some useful documentation, see
 # https://docs.python.org/2/distutils/setupscript.html.
 # This page is useful for dependencies:
 # http://python-packaging.readthedocs.io/en/latest/dependencies.html.
 
+# PSF tutorial for packaging up projects:                                                              
+# https://packaging.python.org/tutorials/packaging-projects
+
 import glob
 from setuptools import setup, find_packages
-import uuid
 
 scripts = glob.glob("scgpm_seqresults_dnanexus/scripts/*.py")
 #Remove __init__.py
@@ -29,7 +38,7 @@ setup(
       "License :: OSI Approved :: MIT License",
       "Operating System :: OS Independent",
   ],
-  description = "Utilities for working with the SCGPM Sequencing Center application logic on DNAnexus.",
+  description = "Utilities for working with the Stanford Genome Sequencing Service Center (GSSC) application logic on DNAnexus.",
   install_requires = [
       "dxpy3",
   ],
@@ -45,6 +54,6 @@ setup(
       "Read the Docs": "https://scgpm-seqresults-dnanexus.readthedocs.io/en/latest",
   },
   scripts = scripts,
-  url = "https://github.com/StanfordBioinformatics/scgpm_seqresults_dnanexus.git",
-  version = "0.2.0",
+  url = "https://github.com/StanfordBioinformatics/scgpm_seqresults_dnanexus.git", # home page
+  version = "0.2.0.post2",
 )

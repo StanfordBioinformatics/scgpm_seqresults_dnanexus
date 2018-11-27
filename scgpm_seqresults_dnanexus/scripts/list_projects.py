@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Writes a tab-delimited file containg information about all ENCODE projects in DNAnexus. The field 
-names are:
+Writes a tab-delimited file containg information about all projects in DNAnexus that are billed to
+the specified org. The field names are:
 
       Name,
       ID,
@@ -19,20 +19,25 @@ names are:
 """
 
 import argparse
+
 import dxpy
+
+import gbsc_dnanexus.utils 
 
 def get_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-o", "--outfile", required=True, help="The output file.")
+    parser.add_argument("--org", required=True, help="The DNAnexus org in which the projects belong.")
     return parser
 
 def main():
     parser = get_parser()
     args = parser.parse_args()
+    org = gbsc_dnanexus.utils.add_dx_orgprefix(args.org)
     outfile = args.outfile
     fout = open(outfile, "w")
 
-    projects = dxpy.api.org_find_projects(object_id="org-snyder_encode")["results"]
+    projects = dxpy.api.org_find_projects(object_id=org)["results"]
     print("There are", len(projects), "projects.")
     header = [
         "Name",
