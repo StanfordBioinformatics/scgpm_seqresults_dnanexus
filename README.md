@@ -16,12 +16,12 @@ The heart of this API rests in the **`DxSeqResults()`** class in the **`dnanexus
 
 The **scripts** are many, and include tools such as:
 
-* Cleaning up projects to save space,
-* Listing projects and their properties for projects billed to a specific org,
-* Downloading fastqs of interest,
-* Adding properties to a project,
-* accepting project transfers
+* Clean up projects to save space,
+* List projects and their properties for projects billed to a specific org,
+* Download fastqs of interest,
+* Add properties to a project,
+* Accept project transfers
 
-The first point above has been heavily used to save space and costs. The script is called ``scgpm_clean_raw_data.py`` and works by unneccessary extras in the raw_data folder of a project.  It works by running an app on DNAnexus by the same name and cleans out all projects that have been created within the last N days. 
+The first point above has been heavily used to save space and costs. The script is called ``scgpm_clean_raw_data.py`` and works by removing unneccessary extras in the raw_data folder of a project.  It works by running an app on DNAnexus by the same name and cleans out all projects that have been created within the last N days. 
 
 
