@@ -22,7 +22,7 @@ def get_logfile_name(tags):
   """
   if not os.path.exists(sd.LOG_DIR):
     os.mkdir(sd.LOG_DIR)
-  filename = "log_"
+  filename = "log"
   for tag in tags:
     filename += "_{}".format(tag)
   filename += ".txt"

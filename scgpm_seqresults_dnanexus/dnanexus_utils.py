@@ -29,7 +29,7 @@ import gbsc_dnanexus.utils  #gbsc_dnanexus git submodule containing utils Python
 
 success_logger = logging.getLogger("success")
 success_logger.setLevel(logging.INFO)
-sd_log.add_file_handler(logger=success_logger,level=logging.INFO,tags="success")
+sd_log.add_file_handler(logger=success_logger,level=logging.INFO,tags=["success"])
 
 debug_logger = logging.getLogger(__name__)
 
