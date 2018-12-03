@@ -140,6 +140,8 @@ class DxSeqResults:
     DX_FASTQ_FOLDER = os.path.join(DX_BCL2FASTQ_FOLDER,"fastqs")
     DX_FASTQC_FOLDER = "/stage1_qc/fastqc_reports"
     DX_QC_REPORT_FOLDER = "/stage2_qc_report"
+    #: The extension used for FASTQ files.
+    FQEXT = ".fastq.gz"
 
     def __init__(self,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
         """
@@ -559,11 +561,15 @@ class DxSeqResults:
         Raises:
             `dnanexus_utils.FastqNotFound`: No FASTQ files were found.
         """
-        barcode_glob = "*_{barcode}_*".format(barcode=barcode)
+        fq_ext_glob = "*{}".format(self.FQEXT)
+        name = fq_ext_glob
         if barcode:
-            fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=barcode_glob,name_mode="glob")
-        else:
-            fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name="*.fastq.gz",name_mode="glob")
+            name = "*_{barcode}_*{FQEXT}".format(barcode=barcode, FQEXT=self.FQEXT)
+        fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=name,name_mode="glob")
+        if not fastqs:
+            # Then look for them in all folders:
+            fastqs= dxpy.find_data_objects(project=self.dx_project_id,name=name,name_mode="glob")
+           
         if not fastqs:
             msg = "No FASTQ files found for run {run} ".format(run=proj_name)
             if barcode:
