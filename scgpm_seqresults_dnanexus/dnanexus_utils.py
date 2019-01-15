@@ -37,6 +37,13 @@ def log_success_and_debug(msg):
     debug_logger.debug(msg)
     success_logger.info(msg)
 
+class DxMissingLibraryNameProperty(Exception):
+    """
+    Raised when creating a new DxSeqResults instance for a DNAnexus project that doesn't have the
+    library_name project property present.
+    """
+    pass
+
 class DxProjectMissingQueueProperty(Exception):
     pass
 
@@ -219,6 +226,8 @@ class DxSeqResults:
         Raises: 
             `scgpm_seqresults_dnanexus.dnanexus_utils.DxMultipleProjectsWithSameLibraryName()`: The 
                 search is by self.library_name, and multiple DNAnexus projects have that library name.
+
+            `DxMissingLibraryNameProperty`: The DNAnexus project property 'library_name' is not present. 
         """
         dx_project_props = {}
         if self.library_name:
@@ -256,7 +265,12 @@ class DxSeqResults:
         self.dx_project_id = dx_proj.id
         self.dx_project_name = dx_proj.name
         self.dx_project_props = dxpy.api.project_describe(object_id=dx_proj.id,input_params={"fields": {"properties": True}})["properties"]
-        self.library_name = self.dx_project_props["library_name"]
+        try:
+            self.library_name = self.dx_project_props["library_name"]
+        except KeyError:
+            msg = "DNAnexus project {} is missing the library_name property.".format(self.dx_project_name)
+            raise DxMissingLibraryNameProperty(msg)
+
   
     def _set_sequencing_run_name(self):
         """
