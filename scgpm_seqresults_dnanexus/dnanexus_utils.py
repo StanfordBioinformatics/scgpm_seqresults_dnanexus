@@ -37,6 +37,12 @@ def log_success_and_debug(msg):
     debug_logger.debug(msg)
     success_logger.info(msg)
 
+class DxMissingAlignmentSummaryMetrics(Exception):
+    """
+    Raised by `DxSeqResults.get_alignment_summary_metrics()`	when it can't locate a Picard alignment summary
+    metrics file for a given barcoded sample of FASTQ sequencing results. 
+    """
+
 class DxMissingLibraryNameProperty(Exception):
     """
     Raised when creating a new DxSeqResults instance for a DNAnexus project that doesn't have the
@@ -303,10 +309,15 @@ class DxSeqResults:
         # more_ok parameter to False, but this blows-up in Python 3.7 - giving me a RuntimeError. 
         # So, I just won't set it for now. I think dxpy is still mainly a Python 2.7 library and
         # can break in later version of Python3. 
-        file_id = dxpy.find_one_data_object(
-            zero_ok=False,
-            project=self.dx_project_id,
-            name=filename)["id"]
+        try:
+            file_id = dxpy.find_one_data_object(
+                zero_ok=False,
+                project=self.dx_project_id,
+                name=filename)["id"]
+        except dxpy.exceptions.DXSearchError as err:
+            msg = "Picard alignment summary metrics for barcode {} in DX project {} not found.".format(barcode, self.dx_project_id)
+            debug_logger.error(msg)
+            raise DxMissingAlignmentSummaryMetrics(msg)
         fh = StringIO(dxpy.open_dxfile(file_id).read())
         asm = picard.CollectAlignmentSummaryMetrics(fh)
         return asm.metrics
