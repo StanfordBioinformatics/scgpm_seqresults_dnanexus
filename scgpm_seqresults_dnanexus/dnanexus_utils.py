@@ -124,11 +124,28 @@ def accept_project_transfers(access_level,queue,org,share_with_org=None):
           if share_with_org:
               msg = "Sharing project {proj_id} with {org} with access level {share_with_org}.".format(proj_id=proj_id,org=org,share_with_org=share_with_org)
               debug_logger.debug(msg)
+              share_with_org(project_ids=[proj_id], org=org, access_level=share_with_org)
               dxpy.api.project_invite(object_id=proj_id,input_params={"invitee": org,"level": share_with_org,"suppressEmailNotification": True})
               success_logger.info(msg)
       return transferred
 
-  
+
+def share_with_org(project_ids, org, access_level, suppress_email_notification=False):
+    """
+    Shares one or more DNAnexus projects with an organization.
+
+    Args:
+        project_ids: `list`. One or more DNAnexus project identifiers, where each project ID is in 
+            the form "project-FXq6B809p5jKzp2vJkjkKvg3". 
+        org: `str`. The name of the DNAnexus org with which to share the projects. 
+        access_level: The permission level to give to members of the org - one of
+            ["VIEW","UPLOAD","CONTRIBUTE","ADMINISTER"].
+        suppress_email_notification: `bool`. True means to allow the DNAnexus platform to send an
+            email notification for each shared project. 
+    """
+    for p in project_ids:
+        dxpy.api.project_invite(object_id=p,input_params={"invitee": org,"level": access_level,"suppressEmailNotification": suppress_email_notification})
+ 
 
 class DxSeqResults:
     """
