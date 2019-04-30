@@ -607,13 +607,13 @@ class DxSeqResults:
         name = fq_ext_glob
         if barcode:
             name = "*_{barcode}_*{FQEXT}".format(barcode=barcode, FQEXT=self.FQEXT)
-        fastqs= dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=name,name_mode="glob")
+        fastqs = list(dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=name,name_mode="glob"))
         if not fastqs:
             # Then look for them in all folders:
-            fastqs= dxpy.find_data_objects(project=self.dx_project_id,name=name,name_mode="glob")
+            fastqs= list(dxpy.find_data_objects(project=self.dx_project_id,name=name,name_mode="glob"))
            
         if not fastqs:
-            msg = "No FASTQ files found for run {run} ".format(run=proj_name)
+            msg = "No FASTQ files found for run {run} ".format(run=self.dx_project_name)
             if barcode:
                 msg += "and barcode {barcode}.".format(barcode=barcode)
             raise FastqNotFound(msg)
