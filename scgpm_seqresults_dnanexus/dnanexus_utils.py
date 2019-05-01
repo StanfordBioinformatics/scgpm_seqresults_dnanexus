@@ -129,10 +129,23 @@ def accept_project_transfers(access_level,queue,org,share_with_org=None):
               success_logger.info(msg)
       return transferred
 
+def find_org_projects_by_name_glob(org, glob):
+    """
+    Args:
+        glob: `str`. 
+
+    Ex:
+        Find the project(s) with SREQ-163 at the end of the project's name:
+            find_org_projects_by_name_glob(org="org-someorg", glob="*SREQ-163")
+    """
+    results = dxpy.api.org_find_projects(object_id=org, input_params={"name": {"glob": glob}})["results"]
+    return [i["id"] for i in results]
 
 def share_with_org(project_ids, org, access_level, suppress_email_notification=False):
     """
-    Shares one or more DNAnexus projects with an organization.
+    Shares one or more DNAnexus projects with an organization. It appears that DNAnexus requires 
+    for the user that wants to share the org to first have ADMINISTER access on the project. Only
+    then could he share the project with the org. 
 
     Args:
         project_ids: `list`. One or more DNAnexus project identifiers, where each project ID is in 
@@ -144,6 +157,9 @@ def share_with_org(project_ids, org, access_level, suppress_email_notification=F
             email notification for each shared project. 
     """
     for p in project_ids:
+        # First give current user ADMINISTER access to project. For this to be able to work, user
+        # must already be an admin of the org. 
+        dxpy.api.project_invite(object_id=p,input_params={"invitee": dxpy.whoami(),"level": "ADMINISTER","suppressEmailNotification": suppress_email_notification})
         dxpy.api.project_invite(object_id=p,input_params={"invitee": org,"level": access_level,"suppressEmailNotification": suppress_email_notification})
  
 
