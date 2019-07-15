@@ -14,6 +14,7 @@ import json
 import logging
 import os
 from io import StringIO
+import re
 import subprocess
 import sys
 import time
@@ -187,6 +188,7 @@ class DxSeqResults:
     DX_QC_REPORT_FOLDER = "/stage2_qc_report"
     #: The extension used for FASTQ files.
     FQEXT = ".fastq.gz"
+    FQFILE_BARCODE_PROP_NAME = "barcode"
 
     def __init__(self,dx_project_id=False,dx_project_name=False,uhts_run_name=False,sequencing_lane=False,library_name=False,billing_account_id=None,latest_project=False):
         """
@@ -618,22 +620,37 @@ class DxSeqResults:
         Raises:
             `dnanexus_utils.FastqNotFound`: No FASTQ files were found.
         """
+        bc_reg = re.compile("[ACGT]{6,}-[ACGT]{6,}",re.I)
         fq_ext_glob = "*{}".format(self.FQEXT)
         name = fq_ext_glob
-        if barcode:
-            name = "*_{barcode}_*{FQEXT}".format(barcode=barcode, FQEXT=self.FQEXT)
         fastqs = list(dxpy.find_data_objects(project=self.dx_project_id,folder=self.DX_FASTQ_FOLDER,name=name,name_mode="glob"))
         if not fastqs:
             # Then look for them in all folders:
             fastqs= list(dxpy.find_data_objects(project=self.dx_project_id,name=name,name_mode="glob"))
            
         if not fastqs:
-            msg = "No FASTQ files found for run {run} ".format(run=self.dx_project_name)
-            if barcode:
-                msg += "and barcode {barcode}.".format(barcode=barcode)
-            raise FastqNotFound(msg)
+            debug_logger.info("No FASTQ files found for run {run} ".format(run=self.dx_project_name))
+            return []
         fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
-        return fastqs
+        if not barcode:
+            return fastqs       
+
+        bc_fastqs = [] # Only those DXFiles that have the barcode of interest.
+        for fq in fastqs:
+            props = fq.get_properties() 
+            barcode_val = props.get(self.FQFILE_BARCODE_PROP_NAME)
+            if not barcode_val:
+                # Then try to get it from the file name:
+                hit = bc_reg.search(fq.name)
+                if hit:
+                    barcode_val = hit.group()
+            if barcode_val:
+                bc_fastqs.append(fq)
+        if not bc_fastqs:
+            msg = "No FASTQ files found for run {run} and barcode {barcode}.".format(run=self.dx_project_name,barcode=barcode)
+            debug_logger.error(msg)
+            raise FastqNotFound(msg)
+        return bc_fastqs
 
     def revcomp_barcode_in_fastqfile_prop(self, i7=False, i5=False):
         """
@@ -644,11 +661,11 @@ class DxSeqResults:
             i7: `bool`. True means to reverse complement the i7 barcode.
             i5: `bool`. True means to reverse complement the i5 barcode.
         """
-        barcode_prop_name = "barcode"
+        self.FQFILE_BARCODE_PROP_NAME = "barcode"
         all_props = self.get_fastq_files_props()
         for dxfile in all_props:
             props = all_props[dxfile]
-            barcode = props.get(barcode_prop_name)
+            barcode = props.get(self.FQFILE_BARCODE_PROP_NAME)
             if not barcode:
                 continue
             try:
@@ -665,11 +682,11 @@ class DxSeqResults:
                 res += "-" + i5_idx
             debug_logger.info("Updating DNAnexus FASTQ file {} property {} from {} to {}".format(
                 dxfile.name,
-                barcode_prop_name,
+                self.FQFILE_BARCODE_PROP_NAME,
                 barcode,
                 res
             ))    
-            dxfile.set_properties({barcode_prop_name: res})
+            dxfile.set_properties({self.FQFILE_BARCODE_PROP_NAME: res})
             
             
     def revcomp(self, seq):
