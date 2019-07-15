@@ -13,7 +13,6 @@
 import json
 import logging
 import os
-import pdb
 from io import StringIO
 import subprocess
 import sys
@@ -646,27 +645,31 @@ class DxSeqResults:
             i5: `bool`. True means to reverse complement the i5 barcode.
         """
         barcode_prop_name = "barcode"
-        all_props in self.get_fastq_file_props():
+        all_props = self.get_fastq_files_props()
         for dxfile in all_props:
             props = all_props[dxfile]
             barcode = props.get(barcode_prop_name)
             if not barcode:
                 continue
-            i7_idx,i5_idx = barcode.split("-")
+            try:
+                i7_idx,i5_idx = barcode.split("-")
+            except ValueError:
+                continue
             if i7:
-                i7 = self.revcomp(i7)
-            res = i7
-            if i5:
-                # Will be None if not PE sequencing
-                i5 = self.revcomp(i5)
-                res += "-" + i5
+                i7_idx = self.revcomp(i7_idx)
+            res = i7_idx
+            if i5 and i5_idx:
+                # if_idx will be None if not PE sequencing
+                i5_idx = self.revcomp(i5_idx)
+            if i5_idx:
+                res += "-" + i5_idx
             debug_logger.info("Updating DNAnexus FASTQ file {} property {} from {} to {}".format(
                 dxfile.name,
                 barcode_prop_name,
                 barcode,
                 res
-            )    
-            #dxfile.set_properties(barcode_prop_name)
+            ))    
+            dxfile.set_properties({barcode_prop_name: res})
             
             
     def revcomp(self, seq):
