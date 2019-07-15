@@ -635,7 +635,56 @@ class DxSeqResults:
             raise FastqNotFound(msg)
         fastqs = [dxpy.DXFile(project=x["project"],dxid=x["id"]) for x in fastqs]
         return fastqs
-  
+
+    def revcomp_barcode_in_fastqfile_prop(self, i7=False, i5=False):
+        """
+        Use this method if you need to update the barcode sequence stored as the value of the barcode
+        property of a FASTQ file on DNAnexus. 
+
+        Args:
+            i7: `bool`. True means to reverse complement the i7 barcode.
+            i5: `bool`. True means to reverse complement the i5 barcode.
+        """
+        barcode_prop_name = "barcode"
+        all_props in self.get_fastq_file_props():
+        for dxfile in all_props:
+            props = all_props[dxfile]
+            barcode = props.get(barcode_prop_name)
+            if not barcode:
+                continue
+            i7_idx,i5_idx = barcode.split("-")
+            if i7:
+                i7 = self.revcomp(i7)
+            res = i7
+            if i5:
+                # Will be None if not PE sequencing
+                i5 = self.revcomp(i5)
+                res += "-" + i5
+            debug_logger.info("Updating DNAnexus FASTQ file {} property {} from {} to {}".format(
+                dxfile.name,
+                barcode_prop_name,
+                barcode,
+                res
+            )    
+            #dxfile.set_properties(barcode_prop_name)
+            
+            
+    def revcomp(self, seq):
+        """
+        Returns The reverse complement of a DNA sequence. 
+
+        Args:
+            seq: `str`. 
+
+        Returns:
+            `str`. 
+        """
+        seq = seq.upper()
+        from_table = "ACTG"
+        to_table = "TGAC"
+        tr_table = str.maketrans(from_table, to_table)
+        return seq.translate(tr_table)[::-1]
+            
     def get_fastq_files_props(self,barcode=None):
         """
         Returns the DNAnexus file properties for all FASTQ files in the project that match the 
