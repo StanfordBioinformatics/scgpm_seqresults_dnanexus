@@ -644,7 +644,7 @@ class DxSeqResults:
                 hit = bc_reg.search(fq.name)
                 if hit:
                     barcode_val = hit.group()
-            if barcode_val:
+            if barcode_val == barcode:
                 bc_fastqs.append(fq)
         if not bc_fastqs:
             msg = "No FASTQ files found for run {run} and barcode {barcode}.".format(run=self.dx_project_name,barcode=barcode)
